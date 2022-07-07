@@ -38,7 +38,7 @@
 ;;;    (the closures) are normal form, but neither type is canonical.                           032
 ;;;    No atoms are normal form.                                                                033
                                                                                               ; 034
-;;; 2. Semantics:  The semantical domain is types as follows:                                   035
+;;; 2. Semantics:  The semantical domain is typed as follows:                                   035
 ;;; -------------                                                                               036
 ;;;                                       ___ numeral                                           037
 ;;;                                      |___ boolean                                           038
@@ -657,9 +657,9 @@
                                         ; needs to be read in using 3-READ                    ; 120
                                                                                               ; 121
 ;;; BACKQUOTE    3-BACKQ-MACRO and 3-COMMA-MACRO are run on reading: they                       122
-;;;                                                                                             123
-;;;                                                                                             124
-;;;                                                                                             125
+;;; ---------    put calls to ~3-BACKQUOTE and ~3-COMMA into the structures                     123
+;;;              they build, which are then run on exit.  This allows the                       124
+;;;              expansion to happen from the inside out.                                       125
                                                                                               ; 126
 (defun 3-backq-macro (stream)                                                                 ; 127
    (let ((3=backquote-depth (1+ 3=backquote-depth)))                                          ; 128
