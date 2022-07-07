@@ -1057,211 +1057,187 @@
                               (print normal-form)                                             ; 023
                               (read-normalise-print env))))))                                 ; 024
                                                                                               ; 025
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
+                                                                                  ; Page 8    ; 001
+;;; Rail Management:                                                                            002
+;;; ================                                                                            003
 ;;;                                                                                             004
 ;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
+;;; 3-RCONS   Make a new rail (or sequence designator) out of the args                          006
+;;; 3-SCONS                                                                                     007
+;;; -------                                                                                     008
+                                                                                              ; 009
+(defun 3-rcons (args)                                                                         ; 010
+  (do ((args (3-strip (3-rail-check args)) (3-strip args))                                    ; 011
+       (new nil (cons !(car args) new)))                                                      ; 012
+      ((null args) ↑(cons '~RAIL~ (nreverse new)))))                                          ; 013
+                                                                                              ; 014
+(defun 3-scons (args)                                                                         ; 015
+  (do ((args (3-strip (3-rail-check args)) (3-strip args))                                    ; 016
+       (new nil (cons (car args) new)))                                                       ; 017
+      ((null args) (cons '~RAIL~ (nreverse new)))))                                           ; 018
+                                                                                              ; 019
+;;; 3-RS  Macro that takes two forms, one for rails and one for sequences,                      020
+;;; ----  and wraps the appropariate type dispatch around them.                                 021
+                                                                                              ; 022
+(defmacro 3-rs (exp rail-form seq-form)                                                       ; 023
+   `(caseq (3-type ,exp)                                                                      ; 024
+       (handle ,rail-form)                                                                    ; 025
+       (rail ,seq-form)                                                                       ; 026
+       (t (3-ref-type-err ,exp '|RAIL OR SEQUENCE|))))                                        ; 027
+                                                                                              ; 028
+;;; 3-PREP      -- These four kinds are defined over both rails and sequences.                  029
+;;; 3-LENGTH       They are all defined in terms of *-versions, which operate                   030
+;;; 3-TAIL         on the implementing rails.                                                   031
+;;; 3-NTH                                                                                       032
+                                                                                              ; 033
+(defun 3-prep (el exp)                                                                        ; 034
+   (3-rs exp ↑(list* '~RAIL~ !el (3-rail-check !exp))                                         ; 035
+              (list* '~RAIL el exp)))                                                         ; 036
+                                                                                              ; 037
+(defun 3-length (exp)                                                                         ; 038
+   (3-rs exp (3-length* (3-rail-check !exp))                                                  ; 039
+             (3-length* exp)))                                                                ; 040
+                                                                                              ; 041
+(defun 3-tail (n exp)                                                                         ; 042
+   (3-rs exp ↑(3-tail* n (3-rail-check !exp))                                                 ; 043
+              (3-tail* n exp)))                                                               ; 044
+                                                                                              ; 045
+(defun 3-nth (n exp)                                                                          ; 046
+   (3-rs exp ↑(car (3-nthcdr* n (3-rail-check !exp)))                                         ; 047
+              (car (3-nthcdr* n exp))))                                                       ; 048
+                                                                                              ; 049
+;;; 3-RPLACN   Defined onlu on RAILS.                                                           050
+;;; --------                                                                                    051
+                                                                                              ; 052
+(defun 3-rplacn (n rail el)                                                                   ; 053
+   (rplacn (3-nthcdr* n (3-rail-check rail)) el)                                              ; 054
+   rail)                                                                                      ; 055
+                                                                                              ; 056
+(defun 3-nthcdr* (n rail)                                                                     ; 057
+   (if (< n 1) (3-index-error n rail))                                                        ; 058
+   (do ((i 1 (1+ i))                                                                          ; 059
+        (rest (3-strip rail) (3-strip rest)))                                                 ; 060
+       ((or (= n i) (null rest))                                                              ; 061
+        (if (null rest)                                                                       ; 062
+            (3-index-error n rail)                                                            ; 063
+            rest))))                                                                          ; 064
+                                                                                  ; Page 8:1  ; 065
+(defun 3-tail* (n o-rail)                                                                     ; 066
+  (if (< n 0) (3-index-error n o-rail))                                                       ; 067
+  (if (zerop n)                                                                               ; 068
+      o-rail                                                                                  ; 069
+      (do ((i 0 (1+ i))                                                                       ; 070
+           (rail (3-strip* o-rail) (3-strip* (cdr rail))))                                    ; 071
+          ((or (= n i) (null (cdr rail)))                                                     ; 072
+           (if (= n i)                                                                        ; 073
+               (if (eq (car rail) '~RAIL~)                                                    ; 074
+                   rail                                                                       ; 075
+                   (let ((tail (cons '~RAIL~ (cdr rail))))                                    ; 076
+                     (rplacd rail tail) ; Splice in a new header                              ; 077
+                     tail))                                                                   ; 078
+               (3-error `(,n is too large for a tail of) o-rail))))))                         ; 079
+                                                                                              ; 080
+;;; RPLACT is what all the trouble is about.  A tempting implementation is:                     081
 ;;;                                                                                             082
-;;;                                                                                             083
+;;;   (defmacro 3-rplact (n r1 r2) `(cdr (rplacd (3-tail ,n ,r1) ,r2)))                         083
 ;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
+;;; but this has two problems.  First, it can generate an unnecessary header,                   085
+;;; since 3-TAIL may construct one, even though r2 is guaranteed to have one                    086
+;;; already.  Second, some uses of this (such as (RPLACT 1 X X)) would generate                 087
+;;; circular structures.  The following version avoids these problems:                          088
+                                                                                              ; 089
+(defun 3-rplact (n r1 r2)                                                                     ; 090
+   (3-rail-check r1)                                                                          ; 091
+   (3-rail-check r2)                                                                          ; 092
+   (if (< n 0) (3-index-error n r1))                                                          ; 093
+   (do ((i 0 (1+ i))                                                                          ; 094
+        (last r1 rail)                                                                        ; 095
+        (rail (3-strip* r1) (3-strip* (cdr rail))))                                           ; 096
+       ((or (= n 1) (null (cdr rail)))                                                        ; 097
+        (progn                                                                                ; 098
+         (if (not (= n i)) (3-index-error n r1))                                              ; 099
+         (if (let ((r2-headers (do ((r2 r2 (cdr r2))                                          ; 100
+				    (heads nil (cons r2 heads)))                              ; 101
+				   ((not (eq (car r2) '~RAIL~)) heads))))                     ; 102
+	       (do ((r1-header (cdr last) (cdr r1-header)))                                   ; 103
+		   ((not (eq (car r1-header) '~RAIL~)) 't)                                    ; 104
+		 (if (memq r1-header r2-headers) (return 'nil))))                             ; 105
+	     (rplacd rail r2))                                                                ; 106
+	 r1))))                                                                               ; 107
+                                                                                              ; 108
+                                                                                  ; Page 9    ; 001
+;;; Typing and Type Checking:                                                                   002
+;;; =========================                                                                   003
+                                                                                              ; 004
+(eval-when (load eval compile)                  ; Backquote needs this                        ; 005
+                                                                                              ; 006
+(defun 3-type (exp)                                                                           ; 007
+    (cond ((fixp exp) 'numeral)                                                               ; 008
+          ((memq exp '($T $F)) 'boolean)                                                      ; 009
+          ((symbolp exp) 'atom)                                                               ; 010
+          ((eq (car exp) '~RAIL~) 'rail)                                                      ; 011
+          ((eq (car exp) '~QUOTE~) 'handle)                                                   ; 012
+          (t 'pair)))                                                                         ; 013
+                                                                                              ; 014
+)                                               ; end of eval-when                            ; 015
+                                                                                              ; 016
+;;; 3-boolean and 3-numeral are macros, defined above.                                          017
+                                                                                              ; 018
+(defun 3-atom (e) (and (symbolp e) (not (memq e '($T $F)))))                                  ; 019
+(defun 3-rail (e) (and (list? e) (eq (car e) '~RAIL~)))                                       ; 020
+(defun 3-pair (e) (eq (3-type e) 'pair))                                                      ; 021
+                                                                                              ; 022
+(eval-when (load eval compile)                                                                ; 023
+(defun 3-handle (e)  (and (list? e) (eq (car e) '~QUOTE~)))                                   ; 024
+)                                                                                             ; 025
+                                                                                              ; 026
+(defun 3-atom-check   (e) (if (3-atom e)    e (3-type-error e 'atom)))                        ; 027
+(defun 3-rail-check   (e) (if (3-rail e)    e (3-type-error e 'rail)))                        ; 028
+(defun 3-pair-check   (e) (if (3-pair e)    e (3-type-error e 'pair)))                        ; 029
+(defun 3-handle-check (e) (if (3-handle e)  e (3-type-error e 'handle)))                      ; 030
+(defun 3-num-check    (e) (if (3-numeral e) e (3-type-error e 'numeral)))                     ; 031
+(defun 3-bool-check   (e) (if (3-boolean e) e (3-type-error e 'boolean)))                     ; 032
+                                                                                              ; 033
+;;; 3-REF-TYPE   Returns the type of the entity designated by the 3-LISP                        034
+;;; ----------   object encoded as the argument.                                                035
+                                                                                              ; 036
+(defun 3-ref-type (exp)                                                                       ; 037
+  (caseq (3-type exp)                                                                         ; 038
+    (numeral 'number)                                                                         ; 039
+    (boolean 'truth-value)                                                                    ; 040
+    (rail    'sequence)                                                                       ; 041
+    (handle  (3-type (cdr exp)))                                                              ; 042
+    (pair    (if (or (eq (car exp) 3=simple-closure)                                          ; 043
+                     (eq (car exp) 3=reflect-closure)                                         ; 044
+                     (memq (car exp) 3=simple-alises))                                        ; 045
+                 'function                                                                    ; 046
+                 (3-error '(not in normal form -- REF-TYPE/:) exp)))                          ; 047
+    (atom    (3-error '(not in normal form -- REF-TYPE/:) exp))))                             ; 048
+                                                                                              ; 049
+;;; 3-REF   Returns the referent of the argument, which must either be a                        050
+;;; -----   handle or a rail of handles, since the only kinds of ref's we                       051
+;;;         can return are s-expressions.                                                       052
+                                                                                              ; 053
+(defun 3-ref (exp)                                                                            ; 054
+  (cond ((3-handle exp) (cdr exp))                                                            ; 055
+        ((3-rail exp)                                                                         ; 056
+         (do ((rail (3-strip exp) (3-strip rail))                                             ; 057
+              (elements nil (cons !(car rail) elements)))                                     ; 058
+             ((null rail) (cons '~RAIL~ (nreverse elements)))                                 ; 059
+           (if (not (3-handle (car rail)))                                                    ; 060
+               (3-ref-type-error exp '|SEQUENCE OF S-EXPRESSIONS|))))                         ; 061
+        (t (3-ref-type-error exp '|S-EXPRESSION OR SEQUENCE OF S-EXPRESSIONS|))))             ; 062
+                                                                                              ; 063
+;;; 3-PROC-TYPE   Returns the procedure type of the argument                                    064 [sic. no full stop]
+;;; -----------                                                                                 065
+                                                                                              ; 066
+(defun 3-proc-type (proc)                                                                     ; 067
+  (3-pair-check proc)                                                                         ; 068
+  (cond ((eq (car proc) 3=simple-closure) 'simple)                                            ; 069
+        ((memq (car proc) 3=simple-aliases) 'simple)                                          ; 070
+        ((eq (car proc) 3=reflect-closure) 'reflect)                                          ; 071
+        (t (3-type-error proc 'closure))))                                                    ; 072
+;;;                                                                               ; Page 10   ; 001
 ;;;                                                                                             002
 ;;;                                                                                             003
 ;;;                                                                                             004
