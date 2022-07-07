@@ -4,6 +4,23 @@
 ;; volume i., Brian Cantwell Smith, February 1982, Appendix, pp. 708--751.
 ;; http://publications.csail.mit.edu/lcs/pubs/pdf/MIT-LCS-TR-272.pdf
 
+;; This file is intended to be as faithful transcription as possible.
+;; Pagination and line numbers are preserved as are all the inconsistencies in
+;; the spelling and punctuation (mentioned in the brackets at the right margin).
+;;
+;; Notation
+;; --------
+;;
+;; The text uses fairly Spartan character set, with the exception of left and up
+;; arrow symbols. Curiously, it is explicitly stated a few times that "!" is
+;; used instead of the "downarrow" symbol, because the latter is not in ASCII
+;; (e.g., see p. 3, line 034 of the transcript), so presumably left and up
+;; arrows *are* in ASCII. While "uparrow" can be identified with the caret ("^",
+;; U+005e), there is no obvious left arrow in modern ASCII.
+;;
+;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
+;; "uparrow" and Unicode LEFTWARDS ARROW (U+2190) "←" for "leftarrow".
+
 ;;; -*- Mode:LISP; Package:User; Base: 10. -*-                                      Page 1      001
 ;;;                                                                                             002
 ;;;                             3-LISP                                                          003
@@ -567,7 +584,7 @@
 ;;; alias, temporarily bind 3=simple-aliases to NIL.                                            032
 ;;;                                                                                             033
 ;;; There are two special read macro characters, for name and referent (MACLISP                 034
-;;; and 3-LISP versions).  (Ideallt these would be uparrow and downarrow, but                   035
+;;; and 3-LISP versions).  (Ideally these would be uparrow and downarrow, but                   035
 ;;; down-arrow is unfortunately not an ASCII character):                                        036 [sic. hyphenation]
 ;;;                                                                                             037
 ;;;      Form           MACLISP expansion       3-LISP expansion                                038
@@ -1238,5859 +1255,750 @@
         ((eq (car proc) 3=reflect-closure) 'reflect)                                          ; 071
         (t (3-type-error proc 'closure))))                                                    ; 072
 ;;;                                                                               ; Page 10   ; 001
-;;;                                                                                             002
-;;;                                                                                             003
+;;; Identity and Normal-form Predicates:                                                        002
+;;; ====================================                                                        003
 ;;;                                                                                             004
 ;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
+;;; 3-CANONICALISE   Maps aliases onto their proper identity.                                   006
+;;; --------------                                                                              007
+                                                                                              ; 008
+(defun 3-canonicalise (exp)                                                                   ; 009
+   (if (and (symbolp exp) (memq exp 3=simple-aliases))                                        ; 010
+       3=simple-closure                                                                       ; 011
+       exp))                                                                                  ; 012
+                                                                                              ; 013
+;;; 3-EQUAL   True just in case arguments implement the same 3-LISP object.                     014
+;;; -------                                                                                     015
+                                                                                              ; 016
+(defun 3-equal (e1 e2)                                                                        ; 017
+  (and (eq (3-type e1) (3-type e2))                                                           ; 018
+       (caseq (3-type e1)                                                                     ; 019
+         (handle (let ((r1 (3-canonicalise !e1))                                              ; 020
+                       (r2 (3-canonicalise !e2)))                                             ; 021
+                   (or (eq r1 r2)                                                             ; 022
+                       (and (3-rail r1)                                                       ; 023
+                            (3-rail r2)                                                       ; 024
+                            (eq (3-strip* r1) (3-strip* r2)))                                 ; 025
+                       (and (3-handle r1)                                                     ; 026
+                            (3-handle r2)                                                     ; 027
+                            (3-equal r1 r2)))))                                               ; 028
+         (boolean (eq e1 e2))                                                                 ; 029
+         (numeral (= e1 e2))                                                                  ; 030
+         (rail (do ((e1 (3-strip e1) (3-strip e1))                                            ; 031
+                    (e2 (3-strip e2) (3-strip e2)))                                           ; 032
+                   ((null e1) (null e2))                                                      ; 033
+                 (if (not (3-equal (car e1) (car e2)))                                        ; 034
+                     (return 'nil))))                                                         ; 035 [next line is 036]
+         (t (3-error '|= is defined only over s-expressions,
+                     numerals, truth-values, and some sequences|)))))                         ; 037
+                                                                                              ; 038
+;;; 3-NORMAL   True in case argument is in normal form.                                         039
+;;; --------                                                                                    040
+                                                                                              ; 041
+(defun 3-normal (exp)                                                                         ; 042
+    (or (3-handle exp) (3-pnormal exp)))                                                      ; 043
+                                                                                              ; 044
+(defun 3-pnormal (exp)                                                                        ; 045
+  (or (fixp exp)                                                                              ; 046
+      (memq exp '($T $F))                                                                     ; 047
+      (and (list? exp)                                                                        ; 048
+           (or (eq (car exp) 3=simple-closure)                                                ; 049
+               (eq (car exp) 3=reflect-closure)                                               ; 050
+               (memq (car exp) 3=simple-aliases))                                             ; 051
+           (3-rail (cdr exp))                                                                 ; 052
+           (3-normal (3r-1st (cdr exp)))                                                      ; 053
+           (3-normal (3r-2nd (cdr exp)))                                                      ; 054
+           (3-normal (3r-3rd (cdr exp))))                                                     ; 055
+      (and (3-rail exp)                                                                       ; 056
+           (do ((exp (3-strip exp) (3-strip exp)))                                            ; 057
+               ((null exp) 't)                                                                ; 058
+             (if (not (3-normal (car exp))) (return 'nil))))))                                ; 059
+                                                                                              ; 060
+                                                                                  ; Pagw 11   ; 001
+;;; Top Level:                                                                                  002
+;;; ==========                                                                                  003
+                                                                                              ; 004
+(defmacro loop-catch (tag &rest body)                                                         ; 005
+   `(do nil (nil) (*catch ,tag ,@body)))                                                      ; 006
+                                                                                              ; 007
+;;; 3-LOGIN     Used only for obscure reasons on the LISP machine, having                       008
+;;; 3-LOGOUT    to do with compatibility with other users, recovery from                        009
+;;; --------    warm boots, and so forth.                                                       010
+                                                                                              ; 011
+(defun 3-logout ()                                                                            ; 012
+  (setf (tv:io-buffer-input-function tv:kbd-io-buffer)                                        ; 013
+        nil)                                                                                  ; 014
+  (setq readtable S=readtable))                                                               ; 015
+                                                                                              ; 016
+(defun 3-login ()                                                                             ; 017
+  (or (boundp '3=global-environment) (3-init))                                                ; 018
+  (setq base 10. ibase 10. *nopoint t)                                                        ; 019
+  (setq readtable L=readtable))                                                               ; 020
+                                                                                              ; 021
+;;; 3-LISP    Starts up the 3-LISP processor.  The 3-LEVEL-LOOP loop is                         022
+;;; ------    only run on initialisation and errors; otherwise the                              023
+;;;           READ-NORMALISE-PRINT loop is run out of ~C4~.                                     024
+                                                                                              ; 025
+(defun 3-lisp ()                                                                              ; 026
+  (setf (tv:io-buffer-input-function tv:kbd-io-buffer)                                        ; 027
+        (let-closed ((3=process current-process))                                             ; 028
+          #'3-interrupt-handler))                                                             ; 029
+  (or (boundp '3=global-environment) (3-init))                                                ; 030
+  (*catch '3-exit                                                                             ; 031
+   (loop-catch '3-top-loop                                                                    ; 032
+    (let ((3=in-use t))                                                                       ; 033
+       (setq 3=level 0                                                                        ; 034
+             3=states nil)                                                                    ; 035
+       (loop-catch '3-level-loop                                                              ; 036
+          (3-prompt (1+ 3=level))                                                             ; 037
+          (setq 3=a2 (3-read)                                                                 ; 038
+                3=a2 3=global-environment                                                     ; 039
+                3=a3 3=id-closure)                                                            ; 040
+          (loop-catch '3-main-loop (3-normalise 3=a1 3=a2 3=a3)))))))                         ; 041
+                                                                                              ; 042
+;;; 3-LISPIFY   Normalises its argument (should be a 3-LISP expression)                         043
+;;; ---------   at the top level of the level 1 3-LISP environment (intended                    044
+;;;             for use by IN-3-LISP).                                                          045
+                                                                                              ; 046
+(defun 3-lispify (expr)                                                                       ; 047
+  (setq 3=level 1                                                                             ; 048
+        3=states nil                                                                          ; 049
+        3=a1 expr                                                                             ; 050
+        3=a2 3=global-environment                                                             ; 051
+        3=a3 `\(~~C5~ ~,3=a2 []))                                                             ; 052
+  (*catch '3-exit                                                                             ; 053
+     (loop-catch '3-main-loop (3-normalise 3=a1 3=a2 3=a3))))                                 ; 054
+                                                                                              ; 055
+                                                                                  ; Page 12   ; 001
+;;; Errors and Interrupts:                                                                      002
+;;; ======================                                                                      003
+                                                                                              ; 004
+;;; 3-ERROR   General error handler.  MESSAGE is to be printed by MACLISP's                     005
+;;; -------   PRINC, whereas EXPR is printed by 3-PRINT.                                        006
+                                                                                              ; 007
+(defun 3-error (message &optional expr (label '|ERROR: |))                                    ; 008
+    (terpri)                                                                                  ; 009
+    (princ label)                                                                             ; 010
+    (if (atom message)                                                                        ; 011
+        (princ message)                                                                       ; 012
+        (mapc #'(lambda (el) (princ el) (princ '| |))                                         ; 013
+              message))                                                                       ; 014
+    (if expr (3-print expr))                                                                  ; 015
+    (break 3-bkpt 3=break-flag)                                                               ; 016
+    (if 3=in-use                                                                              ; 017
+        (*throw '3-level-loop nil)                                                            ; 018
+        (3-lisp)))                                                                            ; 019
+                                                                                              ; 020
+;;; 3-TYPE-ERROR                       3-ILLEGAL-CHAR                                           021
+;;; 3-INDEX-ERROR                      3-ILLEGAL-ATOM                                           022
+;;; 3-IMPLEMENTATION-ERROR             3-ILLEGAL-BOOLEAN                                        023
+;;; ----------------------             -----------------                                        024
+                                                                                              ; 025
+(defun 3-type-error (exp type)                                                                ; 026
+   (3-error `(expected a ,(implode `(,@(explodec type) #/,))                                  ; 027
+                       but found the ,(3-type exp))                                           ; 028
+             exp '|TYPE-ERROR: |))                                                            ; 029
+                                                                                              ; 030
+(defun 3-ref-type-error (exp type)                                                            ; 031
+  (3-error `(expected a ,(implode `(,@(explodec type) #/,))                                   ; 032
+                      but found the ,(3-ref-type exp))                                        ; 033
+           exp `|TYPE-ERROR: |))                                                              ; 034
+                                                                                              ; 035
+(defun 3-index-error (n rail)                                                                 ; 036
+  (3-error `(,n is out of range for) rail '|INDEX-ERROR: |))                                  ; 037
+                                                                                              ; 038
+(defun 3-implementation-error () (3-error '|Illegal implementation state!|))                  ; 039
+                                                                                              ; 040
+(defun 3-illegal-char (char)                                                                  ; 041
+   (3-error `(unexpected ,(implode `(|"| ,@(explodec char) |"|)))                             ; 042
+            nil '|NOTATION-ERROR: |))                                                         ; 043
+                                                                                              ; 044
+(defun 3-illegal-boolean (exp)                                                                ; 045
+   (3-error `(expected a boolean/, but found ,(implode `($ ,@(explodec exp))))                ; 046
+            nil '|NOTATION-ERROR: |))                                                         ; 047
+                                                                                              ; 048
+(defun 3-illegal-atom (atom)                                                                  ; 049
+   (3-error `(The atom ,atom is reserved in this implementation)                              ; 050
+            nil '|STRUCTURE-ERROR: |))                                                        ; 051
+                                                                                              ; 052
+;;; INTERRUPTS (this code is LISP machine specific):                                            053
+;;; ------------------------------------------------                                            054
+                                                                                              ; 055
+(defun 3-interrupt-handler (ignore character)                                                 ; 056
+  (values character                                                                           ; 057
+          (and tv:selected-window                                                             ; 058
+               (eq 3=process (funcall tv:selected-window ':PROCESS))                          ; 059
+               (boundp '3=in-use)                                                             ; 060
+               (selectq character                                                             ; 061
+                 (#↑B/G                                                                       ; 062
+                    (setq si:inhibit-scheduling-flag nil)                                     ; 063
+                    (process-run-temporary-function                                           ; 064
+                      "3=Main-Quit" 3=process ':INTERRUPT                                     ; 065
+                      #'(lambda () (3-quit-interrupt '3-top-loop)))                           ; 066
+                    T)                                                                        ; 067
+                 (#↑B/F                                                                       ; 068
+                    (setq si:inhibit-scheduling-flag nil)                                     ; 069
+                    (process-run-temporary-function                                           ; 070
+                      "3=Level-Quit" 3=process ':INTERRUPT                                    ; 071
+                      #'(lambda () (3-quit-interrupt '3-level-loop)))                         ; 072
+                    T)                                                                        ; 073
+                 (#↑B/E                                                                       ; 074
+                    (setq si:inhibit-scheduling-flag nil)                                     ; 075
+                    (process-run-temporary-function                                           ; 076
+                      "3=Flip" 3=process ':INTERRUPT                                          ; 077
+                      #'(lambda ()                                                            ; 078
+                          (if 3=in-use                                                        ; 079
+                              (progn (princ '|To LISP!|) (terpri)                             ; 080
+                                     (*throw '3-exit (ascii 0)))                              ; 081
+                              (progn (princ '|To 3-LISP!|)                                    ; 082
+                                     (3-lisp)))))                                             ; 083
+                    T)))))                                                                    ; 084
+                                                                                              ; 085
+(defun 3-quit-interrupt (tag)                                                                 ; 086
+    (if 3=in-use                                                                              ; 087
+        (progn (princ '| QUIT!|)                                                              ; 088
+               (terpri)                                                                       ; 089
+               (*throw tag nil))                                                              ; 090
+        (*throw 'sys:command-level nil)))                                                     ; 091
+                                                                                              ; 092
+                                                                                              ; 093
+                                                                                  ; Page 13   ; 001
+;;; Initialisation:                                                                             002
+;;; ===============                                                                             003
+                                                                                              ; 004
+(defun 3-init ()                                                                              ; 005
+ (princ '|   (initialising 3-LISP reflective model -- this take a few minutes)|)              ; 006
+ (setq                                                                                        ; 007
+   3=in-use nil                                                                               ; 008
+   3=level 1                                                                                  ; 009
+   3=break-flag t                                                                             ; 010
+   3=simple-aliases '(~C0~ ~C1~ ~C2~ ~C3~ ~C4~ ~C5~ ~PRIM~)                                   ; 011
+   3=normalised-closure nil             ; These will be set to read values                    ; 012
+   3=reduce-closure nil                 ; later, but will be referenced first                 ; 013
+   3=id-closure nil                                                                           ; 014
+   3=global-environment (3-initial-environment)                                               ; 015
+   prinlength 6                         ; In case environments                                ; 016
+   prinlevel 4                          ; are printed by LISP                                 ; 017
+   base 10.                             ; Since 3-LISP assumes base 10 integers               ; 018
+   ibase 10.                            ; and we use the straight LISP printer                ; 019
+   *nopoint T)                                                                                ; 020
+  (setq 3=simple-closure (3-binding 'simple 3=global-environment)                             ; 021 [sic. indentation]
+        3=reflect-closure (3-binding 'reflect 3=global-environment))                          ; 022
+  (3-define-utilities-0)                                                                      ; 023
+  (3-define-reflective)                                                                       ; 024
+  (setq 3=normalise-closure (3-binding 'normalise 3=global-environment)                       ; 025
+        3=reduce-closure (3-binding 'reduce 3-global-environment))                            ; 026
+  (3-define-utilities-1)                ; The order here is crucial: have to                  ; 027
+  (setq 3=id-closure (3-binding 'id 3=global-environment))                                    ; 028
+  (3-define-utilities-2)                ; get the def's marked before these.                  ; 029 [sic. stop]
+  (3-define-utilities-3))                                                                     ; 030
+                                                                                              ; 031
+;;; 3-INITIAL-ENVIRONMENT    Returns a new initialised 3-LISP environment,                      032
+;;; ---------------------    with each of the names of primitive functions                      033
+;;;                          bound to a circular definition, closed in the new                  034
+;;; environment, that betrays both the type and the number of arguments.  For                   035
+;;; example, CAR is bound to the normalisation of (LAMBDA SIMPLE [X] (CAR X)).                  036
+;;; This could just be a constant list that was copied, but is instead                          037
+;;; generated by the following function, that fakes the normalisation process                   038
+;;; and then side-effects the result to make the environment structures                         039
+;;; circular.                                                                                   040
+                                                                                              ; 041
+(defun 3-initial-environment ()                                                               ; 042
+   (let ((env `\[['global ~~~~]                                                               ; 043
+                 ~,@(mapcar '3-make-primitive-closure                                         ; 044
+                            (3-circular-closures))])                                          ; 045
+     (mapcar #'(lambda (entry)                                                                ; 046
+                 (3-rplcan 1 (cdr !(3r-2nd entry)) env))                                      ; 047
+             (cddr env))                                                                      ; 048
+     (3-rplacn 2 (3r-1st env) ↑env)                                                           ; 049
+     env))                                                                                    ; 050
+                                                                                              ; 051
+;;; 3-MAKE-PRIMITIVE-CLOSURE   Constructs the rpimitive definitions.                            052
+;;; ------------------------                                                                    053
+                                                                                              ; 054
+(defun 3-make-primitive-closure (entry)                                                       ; 055
+  (let ((name (car entry))                                                                    ; 056
+        (def (cdadr entry)))                                                                  ; 057
+    `\[~,↑name ~,↑(cons '~PRIM~ `\[~~dummy~ ~,↑(3r-2nd def) ~,↑(3r-3rd def)])]))              ; 058
+                                                                                              ; 059
+(defun 3-circular-closures ()                                                                 ; 060
+   '((terpri   \(lambda simple [] (terpri)))                                                  ; 061
+   '((read     \(lambda simple [] (read)))                                                    ; 062
+   '((type     \(lambda simple [expr] (type expr)))                                           ; 063
+   '((car      \(lambda simple [pair] (car pair)))                                            ; 064
+   '((cdr      \(lambda simple [pair] (cdr pair)))                                            ; 065
+   '((length   \(lambda simple [vector] (length vector)))                                     ; 066
+   '((print    \(lambda simple [exp] (print exp)))                                            ; 067
+   '((name     \(lambda simple [exp] (name exp)))                                             ; 068
+   '((=        \(lambda simple [a b] (= a b)))                                                ; 069
+   '((pcons    \(lambda simple [a b] (pcons a b)))                                            ; 070
+   '((rcons    \(lambda simple [args] (rcons . args)))                                        ; 071
+   '((scons    \(lambda simple [args] (scons . args)))                                        ; 072
+   '((prep     \(lambda simple [element vector] (prep element vector)))                       ; 073
+   '((nth      \(lambda simple [n vector] (nth n vector)))                                    ; 074
+   '((tail     \(lambda simple [n vector] (tail n vector)))                                   ; 075
+   '((rplaca   \(lambda simple [a pair] (rplaca a pair)))                                     ; 076
+   '((rplacd   \(lambda simple [d pair] (rplacd d pair)))                                     ; 077
+   '((rplacn   \(lambda simple [n rail element] (rplacn n rail element)))                     ; 078
+   '((rplact   \(lambda simple [n rail tail] (rplact n rail tail)))                           ; 079
+   '((+        \(lambda simple [a b] (+ a b)))                                                ; 080
+   '((-        \(lambda simple [a b] (- a b)))                                                ; 081
+   '((*        \(lambda simple [a b] (* a b)))                                                ; 082
+   '((//       \(lambda simple [a b] (/ a b)))                                                ; 083
+   '((referent \(lambda simple [exp env] (referent exp env)))                                 ; 084
+   '((simple   \(lambda simple [env pattern body] (simple env pattern body)))                 ; 085
+   '((reflect  \(lambda simple [env pattern body] (reflect env pattern body)))                ; 086
+   '((ef       \(lambda simple [premise c1 c2] (ef premise c1 c2)))                           ; 087
+   '((*rebind  \(lambda simple [var binding env] (*rebind var binding env)))                  ; 088
+   '((level    \(lambda simple [] (level)))                                                   ; 089
+                                                                                              ; 090
+                                                                                  ; Page 14   ; 001
+;;; 3-LISP:  Reflective Processor:                                                              002
+;;; ==============================                                                              003
+                                                                                              ; 004
+(defun 3-define-reflective ()                                                                 ; 005
+ (in-3-lisp \[                                                                                ; 006
+                                                                                              ; 007
+(define READ-NORMALISE-PRINT                                                                  ; 008
+  (lambda simple [env]                                                                        ; 009
+     (block (prompt (level))                                                                  ; 010
+            (let [[normal-form (normalise (read) env id)]]                                    ; 011
+              (prompt level)                                                                  ; 012
+              (print normal-form)                                                             ; 013
+              (read-normalise-print env)))))                                                  ; 014
+                                                                                              ; 015
+(define NORMALISE                                                                             ; 016
+  (lambda simple [exp env cont]                                                               ; 017
+     (cond [(normal exp) (cont exp)]                                                          ; 018
+           [(atom exp) (cont (binding exp env))]                                              ; 019
+           [(rail exp) (normalise-rail exp env cont)]                                         ; 020
+           [(pair exp) (reduce (car exp) (cdr exp) env cont)])))                              ; 021
+                                                                                              ; 022
+(define REDUCE                                                                                ; 023
+  (lambda simple [proc args env cont]                                                         ; 024
+     (normalise proc env                                                                      ; 025
+        (lambda simple [proc*]                                          ; C0                  ; 026
+           (selectq (procedure-type proc*)                                                    ; 027
+               [reflect ((simple . !(cdr proc*)) args env cont)]                              ; 028
+               [simple (normalise args env (make-c1 proc* cont))])))))                        ; 029
+                                                                                              ; 030
+(define MAKE-C1                                                                               ; 031
+  (lambda simple [proc* cont]                                                                 ; 032
+     (lambda simple [args*]                                             ; C1                  ; 033
+        (cond [(= proc* ↑referent)                                                            ; 034
+               (normalise !(1st args) !(2nd args) cont)]                                      ; 035
+              [(primitive proc*) (cont ↑(!proc* . !args*))]                                   ; 036
+              [$T (normalise (body proc*)                                                     ; 037
+                             (bind (pattern proc*) args* (env proc*))                         ; 038
+                             cont)]))))                                                       ; 039
+                                                                                              ; 040
+(define NORMALISE-RAIL                                                                        ; 041
+  (lambda simple [rail env cont]                                                              ; 042
+     (if (empty rail)                                                                         ; 043
+         (cont `[])                                                                           ; 044
+         (normalise (1st rail) env                                                            ; 045
+             (lambda simple [element*]                                  ; C2                  ; 046
+                (normalise-rail (rest rail) env                                               ; 047
+                   (lambda simple [rest*]                               ; C3                  ; 048
+                      (cont (prep elements* rest*)))))))))                                    ; 049
+                                                                                              ; 050
+]))                                                                                           ; 051
+                                                                                              ; 052
+                                                                                  ; Page 15     001
+;;; 3-LISP:  Utility Support:                                                                   002
+;;; =========================                                                                   003
+                                                                                              ; 004
+;;; 3-DEFINE-UTILITIES-0 sets up the definitions of SET, DEFINE, LAMBDA,                        005
+;;; and Z, so that subsequent defining can proceed regularly.  The technique                    006
+;;; is to bootstrap our way up through temporary versions of a bunch of                         007
+;;; procedures, so as to put ourselves into a position where more adequate                      008
+;;; versions can be manageable defined.                                                         009 [sic. leg. "manageably"]
+                                                                                              ; 010
+(defun 3-define-utilities-0 ()                                                                ; 011
+  (in-3-lisp \[                                                                               ; 012
+                                                                                              ; 013
+;;; First define CURRENT-ENV (so that down-arrow can work) and LAMBDA:                          014
+                                                                                              ; 015
+(rplact (length global)                                                                       ; 016
+        ↑global                                                                               ; 017
+        `[['CURRENT-ENV, ↑↑(reflect [['name ↑name]]                                           ; 018
+                                    '[[] env cont]                                            ; 019
+                                    '(conv ↑env))]                                            ; 020
+          ['LAMBDA ,↑↑(reflect ((reflect [['name ↑name]]                                      ; 021
+                                         '[[] env cont]                                       ; 022
+                                         '(cont ↑env)))                                       ; 023
+                               '[[type pattern body] env cont]                                ; 024
+                               '(cont ↑!(pcons type ↑[env pattern body])))]])                 ; 025
+                                                                                              ; 026
+;;; Next tentative versions of SET, and a real version of Z (though we can't                    027
+;;; use LET or BLOCK in defining Z, this definition is equivalent to the one                    028
+;;; given in the text).  In the following definition of &SET, *REBIND is used,                  029
+;;; rather than &REBIND, for efficiency (*REBIND is provided primitively).  We                  030
+;;; have left in the full definition of &REBIND, to show how it would go: it                    031
+;;; is merely unacceptably slow.                                                                032
+                                                                                              ; 033
+(rplact (length global)                                                                       ; 034
+        ↑global                                                                               ; 035
+        `[['&SET ,↑↑(lambda reflect [[var binding] env cont]                                  ; 036
+                       (cont (*rebind var ↑!binding env)))]                                   ; 037
+          ['Z, ↑↑(lambda simple [fun]                                                         ; 038
+                    ((lambda simple [temp]                                                    ; 039
+                        ((lambda simple [closure]                                             ; 040
+                            ((lambda simple [? ?] temp)                                       ; 041
+                             (rplaca ↑temp (car closure))                                     ; 042
+                             (rplacd ↑temp (cdr closure))))                                   ; 043
+                         ↑(fun temp)))                                                        ; 044
+                     (lambda simple args (error 'partial-closure-used))))]])                  ; 045
+                                                                                              ; 046
+;;; Now a temporary version of REBIND (which is recursive, and uses an explicit                 047
+;;; call to Z in its construction), and a temporary DEFINE that doesn't protect X,              048
+;;; and that expands the macro explicitly:                                                      049
+                                                                                              ; 050
+(rplact (length global)                                                                       ; 051
+        ↑global                                                                               ; 052
+        `[['&REBIND                                                                           ; 053
+           ,↑↑(Z (lambda simple [&rebind]                                                     ; 054
+                    (lambda simple [var binding env]                                          ; 055
+                       ((ef (= (length env) 0)                                                ; 056
+                            (lambda simple []                                                 ; 057
+                               (rplact 0 ↑env ↑[[var binding]]))                              ; 058
+                            (lambda simple []                                                 ; 059
+                               ((ef (= var (nth 1 (nth 1 env)))                               ; 060
+                                    (lambda simple []                                         ; 061
+                                       (rplacn 2 ↑(nth 1 env) ↑binding))                      ; 062
+                                    (lambda simple []                                         ; 063
+                                       (&rebind var binding (tail 1 env)))))))))))]           ; 064
+          ['DEFINE ,↑↑(lambda reflect [[label form] env cont]                                 ; 065
+                         ((lambda simple ? (cont label))                                      ; 066
+                          ↑(referent `(&set ,label                                            ; 067
+                                            (z (lambda simple [,label] ,form)))               ; 068
+                                     env)))]])                                                ; 069
+]))                                                                                           ; 070
+                                                                                  ; Page 15:1   071
+;;; In general there is a sense of order here: IF, for example, must preceed                    072
+;;; LET; hence it cannot use LET in its own definition.  And so on and so forth;                073
+;;; it takes a little care to build things up in a consistent and non-circular                  074
+;;; manner.                                                                                     075
+                                                                                              ; 076
+(defun 3-define-utilities-1 ()                                                                ; 077
+  (in-3-lisp \[                                                                               ; 078
+                                                                                              ; 079
+(define ID (lambda simple [x] x))                                                             ; 080
+                                                                                              ; 081
+(define 1ST (lambda simple [x] (nth 1 x)))                                                    ; 082
+(define 2ND (lambda simple [x] (nth 2 x)))                                                    ; 083
+(define 3RD (lambda simple [x] (nth 3 x)))                                                    ; 084
+(define 4TH (lambda simple [x] (nth 4 x)))                                                    ; 085
+                                                                                              ; 086
+(define REST (lambda simple [x] (tail 1 x)))                                                  ; 087
+(define FOOT (lambda simple [x] (tail (length x) x)))                                         ; 088
+                                                                                              ; 089
+(define EMPTY  (lambda simple [x] (= (length x) 0)))                                          ; 090
+(define UNITY  (lambda simple [x] (= (length x) 1)))                                          ; 091
+(define DOUBLE (lambda simple [x] (= (length x) 2)))                                          ; 092
+                                                                                              ; 093
+(define ATOM        (lambda simple [x] (= (type x) 'atom)))                                   ; 094
+(define RAIL        (lambda simple [x] (= (type x) 'rail)))                                   ; 095
+(define PAIR        (lambda simple [x] (= (type x) 'pair)))                                   ; 096
+(define NUMERAL     (lambda simple [x] (= (type x) 'numeral)))                                ; 097
+(define HANDLE      (lambda simple [x] (= (type x) 'handle)))                                 ; 098
+(define BOOLEAN     (lambda simple [x] (= (type x) 'boolean)))                                ; 099
+                                                                                              ; 100
+(define NUMBER      (lambda simple [x] (= (type x) 'number)))                                 ; 101
+(define SEQUENCE    (lambda simple [x] (= (type x) 'sequence)))                               ; 102
+(define TRUTH-VALUE (lambda simple [x] (= (type x) 'truth-value)))                            ; 103
+                                                                                              ; 104
+(define FUNCTION    (lambda simple [x] (= (type x) 'function)))                               ; 105
+                                                                                              ; 106
+(define PRIMITIVE                                                                             ; 107
+  (lambda simple [proc]                                                                       ; 108
+     (member proc                                                                             ; 109
+             ↑[type = pcons car cdr rcons scons prep length nth tail rplaca                   ; 110
+               rplacd rplacn rplact simple reflect ef name referent + * - /                   ; 111
+               read print])))                                                                 ; 112
+                                                                                              ; 113
+(define PROMPT (lambda simple [] (block (print ↑(level)) (print '>))))                        ; 114
+                                                                                              ; 115
+(define BINDING                                                                               ; 116
+  (lambda simple [var env]                                                                    ; 117
+     (cond [(empty env) (error 'unbound-variable)]                                            ; 118
+           [(= var (1st (1st env))) (2nd (1st env))]                                          ; 119
+           [$t (binding var (rest env))])))                                                   ; 120
+                                                                                              ; 121
+(define ENV     (lambda simple [proc] !(1st (cdr proc))))                                     ; 122
+(define PATTERN (lambda simple [proc] !(2nd (cdr proc))))                                     ; 123
+(define BODY    (lambda simple [proc] !(3rd (cdr proc))))                                     ; 124
+                                                                                              ; 125
+(define PROCEDURE-TYPE                                                                        ; 126
+  (lambda simple [proc]                                                                       ; 127
+     (select (car proc)                                                                       ; 128
+       [↑simple 'simple]                                                                      ; 129
+       [↑reflect 'reflect])))                                                                 ; 130
+                                                                                  ; Page 15:2 ; 131
+(define XCONS                                                                                 ; 132
+  (lambda simple args                                                                         ; 133
+     (pcons (1st args) (rcons . (rest args)))))                                               ; 134
+                                                                                              ; 135
+(define BIND                                                                                  ; 136
+  (lambda simple [pattern args env]                                                           ; 137
+     !(join ↑(match patten args) ↑env)))                                                      ; 138
+                                                                                              ; 139
+(define MATCH                                                                                 ; 140
+  (lambda simple [pattern args]                                                               ; 141
+     (cond [(atom pattern) [[pattern args]]]                                                  ; 142
+           [(handle args) (match pattern (map name !args))]                                   ; 143
+           [(and (empty pattern) (empty args)) (scons)]                                       ; 144
+           [(empty pattern) (error 'too-many-arguments)]                                      ; 145
+           [(empty args) (error 'too-few-argunents)]                                          ; 146
+           [$T !(join ↑(match (1st pattern) (1st args))                                       ; 147
+                      ↑(match (rest pattern) (rest args)))])))                                ; 148
+                                                                                              ; 149
+(define IF                                                                                    ; 150
+  (lambda reflect [args env cont]                                                             ; 151
+     ((ef (rail args)                                                                         ; 152
+          (lambda simple []                                                                   ; 153
+             ((lambda simple [premise c1 c2]                                                  ; 154
+                 (normalise premise env                                                       ; 155
+                    (lambda simple [premise*]                                                 ; 156
+                       ((ef (= premise* '$T)                                                  ; 157
+                            (lambda simple [] (normalise c1 env cont))                        ; 158
+                            (lambda simple [] (normalise c2 env cont)))))))                   ; 159
+                 . args))                                                                     ; 160
+          (lambda simple []                                                                   ; 161
+             (normalise args env                                                              ; 162
+                (lambda simple [[premise c1 c2]]                                              ; 163
+                   (cont (ef (= premise '$T) c1 c2)))))))))                                   ; 164
+                                                                                              ; 165
+(define MEMBER                                                                                ; 166
+  (lambda simple [element vector]                                                             ; 167
+     (cond [(empty vector) $F]                                                                ; 168
+           [(= element (1st vector)) $T]                                                      ; 169
+           [$t (member element (rest vector))])))                                             ; 170
+                                                                                              ; 171
+(define PREP*                                                                                 ; 172
+  (lambda simple args                                                                         ; 173
+     (cond [(empty args) (error 'too-few-args)]                                               ; 174
+           [(unit args) (1st args)]                                                           ; 175
+           [(double args) (prep . args)]                                                      ; 176
+           [$T (prep (1st args) (prep* . (rest args)))])))                                    ; 177
+                                                                                              ; 178
+(define NORMAL                                                                                ; 179
+  (lambda simple [x]                                                                          ; 180
+     (selectq (type x)                                                                        ; 181
+        [numeral $T]                                                                          ; 182
+        [boolean $T]                                                                          ; 183
+        [handle  $T]                                                                          ; 184
+        [atom    $F]                                                                          ; 185
+        [rail (and . (map normal x))]                                                         ; 186
+        [pair (and (member (car pair) ↑[simple reflect])                                      ; 187
+                   (normal (cdr pair)))])))                                                   ; 188
+                                                                                              ; 189
+(define NOT (lambda simple [x] (if x $F $T)))                                                 ; 190
+                                                                                  ; Page 15:3 ; 191
+(define COPY                                                                                  ; 192
+  (lambda simple [rail]                                                                       ; 193
+     (if (empty rail)                                                                         ; 194
+         (rcons)                                                                              ; 195
+         (prep (1st rail) (copy (rest rail))))))                                              ; 196
+                                                                                              ; 197
+(define JOIN                                                                                  ; 198
+  (lambda simple [rail1 rail2]                                                                ; 199
+     (rplact (length rail1) rail1 rail2)))                                                    ; 200
+                                                                                              ; 201
+(define APPEND                                                                                ; 202
+  (lambda simple [rail1 rail2]                                                                ; 203
+     (join (copy . rail1) rail2)))                                                            ; 204
+                                                                                              ; 205
+(define REDIRECT                                                                              ; 206
+  (lambda simple [index rail new-tail]                                                        ; 207
+     (if (< index 1)                                                                          ; 208
+         (error 'redirect-called-with-too-small-an-index)                                     ; 209
+         (rplact (- index 1)                                                                  ; 210
+                 rail                                                                         ; 211
+                 (prep (nth index rail) new-tail)))))                                         ; 212
+                                                                                              ; 213
+(define PUSH                                                                                  ; 214
+  (lambda simple [element stack]                                                              ; 215
+     (rplact 0 stack                                                                          ; 216
+             (prep element                                                                    ; 217
+                   (if (empty stack)                                                          ; 218
+                       `[]                                                                    ; 219
+                       (prep (1st stack) (rest stack)))))))                                   ; 220
+                                                                                              ; 221
+(define POP                                                                                   ; 222
+  (lambda simple [stack]                                                                      ; 223
+     (if (empty stack)                                                                        ; 224
+         (error 'stack-underflow)                                                             ; 225
+         (block1 (1st stack)                                                                  ; 226
+                 (rplact 0 stack (rest stack))))))                                            ; 227
+                                                                                              ; 228
+(define MACRO                                                                                 ; 229
+  (lambda simple [def-env pattern body]                                                       ; 230
+     (reflect def-env                                                                         ; 231
+              `[,pattern env cont]                                                            ; 232
+              `(normalise ,body env cont))))                                                  ; 233
+                                                                                              ; 234
+(define SMACRO                                                                                ; 235
+  (lambda simple [def-env pattern body]                                                       ; 236
+     (reflect def-env                                                                         ; 237
+              '[args env cont]                                                                ; 238
+              `(normalise args env                                                            ; 239
+                  (lambda simple [,pattern]                                                   ; 240
+                     (normalise ,body env cont))))))                                          ; 241
+                                                                                              ; 242
+]))                                                                                           ; 243
+                                                                                  ; Page 15:4 ; 244
+(defun 3-define-utilities-2 ()                                                                ; 245
+   (in-3-lisp \[                                                                              ; 246
+                                                                                              ; 247
+(define LET                                                                                   ; 248
+  (lambda macro [list body]                                                                   ; 249
+     `((lambda simple ,(map 1st list) ,body)                                                  ; 250
+        .,(map 2nd list))))                                                                   ; 251 [illegible punctuation]
+                                                                                              ; 252
+(define LET*                                                                                  ; 253
+  (lambda macro [list body]                                                                   ; 254
+     (if (empty list)                                                                         ; 255
+         body                                                                                 ; 256
+         `((lambda simple ,(1st (1st list))                                                   ; 257
+              ,(let* (rest list) body))                                                       ; 258
+           .,(2nd (1st list))))))                                                             ; 259 [illegible punctuation]
+                                                                                              ; 260
+(define SELECTQ                                                                               ; 261
+  (lambda macro args                                                                          ; 262
+     `(let [[select-key ,(1st args)]]                                                         ; 263
+         ,(selectq* (rest args)))))                                                           ; 264
+                                                                                              ; 265
+(define SELECTQ*                                                                              ; 266
+  (lambda simple [cases]                                                                      ; 267
+     (cond [(empty cases) `[]]                                                                ; 268
+           [(= (1st (1st cases)) '$T)                                                         ; 269
+            (2nd (1st cases))]                                                                ; 270
+           [$T `(if (= select-key ,↑(1st (1st cases)))                                        ; 271
+                    (block . ,(rest (1st cases)))                                             ; 272
+                    ,(selectq* (rest cases)))])))                                             ; 273
+                                                                                              ; 274
+(define SELECT                                                                                ; 275
+  (lambda macro args                                                                          ; 276
+     `(let [[select-key ,(1st args)]]                                                         ; 277
+         ,(select* (rest args)))))                                                            ; 278
+                                                                                              ; 279
+(define SELECT*                                                                               ; 280
+  (lambda simple [cases]                                                                      ; 281
+     (cond [(empty cases) `[]]                                                                ; 282
+           [(= (1st (1st cases)) '$T)                                                         ; 283
+            (2nd (1st cases))]                                                                ; 284
+           [$T `(if (= select-key ,(1st (1st cases)))                                         ; 285
+                    (block . ,(rest (1st cases)))                                             ; 286
+                    ,(select* (rest cases)))])))                                              ; 287
+                                                                                              ; 288
+(define BLOCK (lambda macro args (block* args)))                                              ; 289
+                                                                                              ; 290
+(define BLOCK*                                                                                ; 291
+  (lambda simple [args]                                                                       ; 292
+     (cond [(empty args) (error 'too-few-args-to-block)]                                      ; 293
+           [(unit args) (1st args)]                                                           ; 294
+           [$T `((lambda simple ?                                                             ; 295
+                    ,(block* (rest args)))                                                    ; 296
+                 ,(1st args))])))                                                             ; 297
+                                                                                              ; 298
+(define COND (lambda macro args (cond* args)))                                                ; 299
+                                                                                              ; 300
+(define COND*                           ; COND* cannot itself use COND                        ; 301
+  (lambda simple [args]                                                                       ; 302
+     (if (empty args) `[]                                                                     ; 303
+         `(if ,(1st (1st args))                                                               ; 304
+              ,(2nd (1st args))                                                               ; 305
+              ,(cond* (rest args))))))                                                        ; 306
+                                                                                  ; Page 15:5 ; 307
+(define AND                                                                                   ; 308
+  (lambda macro args                                                                          ; 309
+     (if (rail args) (and* args) `!(and* ↑,args))))                                           ; 310
+                                                                                              ; 311
+(define AND*                                                                                  ; 312
+  (lambda simple [args]                                                                       ; 313
+     (if (empty args)                                                                         ; 314
+         '$T                                                                                  ; 315
+         `(if ,(1st args) ,(and* (rest args)) $F))))                                          ; 316
+                                                                                              ; 317
+(define OR                                                                                    ; 318
+  (lambda macro args                                                                          ; 319
+     (if (rail args) (or* args) `!(or* ↑,args))))                                             ; 320
+                                                                                              ; 321
+(define OR*                                                                                   ; 322
+  (lambda simple [args]                                                                       ; 323
+     (if (empty args) '$F `(if ,(1st args) $T ,(or* (rest aths))))))                          ; 324
+                                                                                              ; 325
+(define MAP                                                                                   ; 326
+  (lambda simple args                                                                         ; 327
+     (map* (1st args) (rest args))))                                                          ; 328
+                                                                                              ; 329
+(define MAP*                                                                                  ; 330
+  (lambda simple [fun vectors]                                                                ; 331
+     (if (empty vectors)                                                                      ; 332
+         (fun)                                                                                ; 333
+         (if (empty (1st vectors))                                                            ; 334
+             (1st vectors)                                                                    ; 335
+             (prep (fun . (firsts vectors))                                                   ; 336
+                   (map* fun (rests vectors)))))))                                            ; 337
+                                                                                              ; 338
+(define FIRSTS                                                                                ; 339
+  (lambda simple [vectors]                                                                    ; 340
+     (if (empty vectors)                                                                      ; 341
+         vectors                                                                              ; 342
+         (prep (1st (1st vectors))                                                            ; 343
+               (firsts (rest vectors))))))                                                    ; 344
+                                                                                              ; 345
+(define RESTS                                                                                 ; 346
+  (lambda simple [vectors]                                                                    ; 347
+     (if (empty vectors)                                                                      ; 348
+         vectors                                                                              ; 349
+         (prep (rest (1st vectors))                                                           ; 350
+               (rests (rest vectors))))))                                                     ; 351
+                                                                                              ; 352
+(define PROTECTING                                                                            ; 353
+  (lambda macro [names body]                                                                  ; 354
+     `(let ,(protecting* names) ,body)))                                                      ; 355
+                                                                                              ; 356
+(define PROTECTING*                                                                           ; 357
+  (lambda simple [names]                                                                      ; 358
+     (if (empty names)                                                                        ; 359
+         `[]                                                                                  ; 360
+         (prep `[,(1st names) ,(1st names)]                                                   ; 361
+               (protecting* (rest names))))))                                                 ; 362
+]))                                                                                           ; 363
+                                                                                  ; Page 15:6 ; 364
+(defun 3-define-utilities-3 ()                                                                ; 365
+   (in-3-lisp \[                                                                              ; 366
+                                                                                              ; 367
+(define REBIND                                                                                ; 368
+  (lambda simple [ver binding env]                                                            ; 369
+     (if (normal binding)                                                                     ; 370
+         (rebind* var binding env)                                                            ; 371
+         (error 'binding-is-not-in-normal-form))))                                            ; 372
+                                                                                              ; 373
+(define REBIND*                                                                               ; 374
+  (lambda simple [var binding env]                                                            ; 375
+     (cond [(empty env) (rplact 0 ↑env ↑[[var binding]])]                                     ; 376
+           [(= var (1st (1st env)))                                                           ; 377
+            (rplacn 2 ↑(1st env) ↑binding)]                                                   ; 378
+           [$T (rebind* var binding (rest env))])))                                           ; 379
+                                                                                              ; 380
+(define SET                                                                                   ; 381
+  (lambda reflect [[var binding] env cont]                                                    ; 382
+     (normalise binding env                                                                   ; 383
+        (lambda simple [binding*]                                                             ; 384
+           (cont (*rebind var binding* env))))))                                              ; 385
+                                                                                              ; 386
+(define DEFINE                                                                                ; 387
+  (protecing [z]                                                                              ; 388
+     (lambda macro [label form]                                                               ; 389
+        `(set ,label (,↑z (lambda simple [,label] ,form))))))                                 ; 390
+                                                                                              ; 391
+(define ERROR                                                                                 ; 392
+  (lambda reflect [a b c]                                                                     ; 393
+     (undefined)))                                                                            ; 394
+                                                                                              ; 395
+]))                                                                                           ; 396
 
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
-;;;                                                                                             000
-;;;                                                                                             001
-;;;                                                                                             002
-;;;                                                                                             003
-;;;                                                                                             004
-;;;                                                                                             005
-;;;                                                                                             006
-;;;                                                                                             007
-;;;                                                                                             008
-;;;                                                                                             009
-;;;                                                                                             010
-;;;                                                                                             011
-;;;                                                                                             012
-;;;                                                                                             013
-;;;                                                                                             014
-;;;                                                                                             015
-;;;                                                                                             016
-;;;                                                                                             017
-;;;                                                                                             018
-;;;                                                                                             019
-;;;                                                                                             020
-;;;                                                                                             021
-;;;                                                                                             022
-;;;                                                                                             023
-;;;                                                                                             024
-;;;                                                                                             025
-;;;                                                                                             026
-;;;                                                                                             027
-;;;                                                                                             028
-;;;                                                                                             029
-;;;                                                                                             030
-;;;                                                                                             031
-;;;                                                                                             032
-;;;                                                                                             033
-;;;                                                                                             034
-;;;                                                                                             035
-;;;                                                                                             036
-;;;                                                                                             037
-;;;                                                                                             038
-;;;                                                                                             039
-;;;                                                                                             040
-;;;                                                                                             041
-;;;                                                                                             042
-;;;                                                                                             043
-;;;                                                                                             044
-;;;                                                                                             045
-;;;                                                                                             046
-;;;                                                                                             047
-;;;                                                                                             048
-;;;                                                                                             049
-;;;                                                                                             050
-;;;                                                                                             051
-;;;                                                                                             052
-;;;                                                                                             053
-;;;                                                                                             054
-;;;                                                                                             055
-;;;                                                                                             056
-;;;                                                                                             057
-;;;                                                                                             058
-;;;                                                                                             059
-;;;                                                                                             060
-;;;                                                                                             061
-;;;                                                                                             062
-;;;                                                                                             063
-;;;                                                                                             064
-;;;                                                                                             065
-;;;                                                                                             066
-;;;                                                                                             067
-;;;                                                                                             068
-;;;                                                                                             069
-;;;                                                                                             070
-;;;                                                                                             071
-;;;                                                                                             072
-;;;                                                                                             073
-;;;                                                                                             074
-;;;                                                                                             075
-;;;                                                                                             076
-;;;                                                                                             077
-;;;                                                                                             078
-;;;                                                                                             079
-;;;                                                                                             080
-;;;                                                                                             081
-;;;                                                                                             082
-;;;                                                                                             083
-;;;                                                                                             084
-;;;                                                                                             085
-;;;                                                                                             086
-;;;                                                                                             087
-;;;                                                                                             088
-;;;                                                                                             089
-;;;                                                                                             090
-;;;                                                                                             091
-;;;                                                                                             092
-;;;                                                                                             093
-;;;                                                                                             094
-;;;                                                                                             095
-;;;                                                                                             096
-;;;                                                                                             097
-;;;                                                                                             098
-;;;                                                                                             099
-
+;; This is the end of the Appendix.
