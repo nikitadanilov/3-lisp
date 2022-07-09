@@ -20,6 +20,7 @@
 ;;
 ;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
 ;; "uparrow" and Unicode LEFTWARDS ARROW (U+2190) "←" for "leftarrow".
+;; 2193	 ↓ 	DOWNWARDS ARROW
 
 ;;; -*- Mode:LISP; Package:User; Base: 10. -*-                                      Page 1      001
 ;;;                                                                                             002
@@ -105,7 +106,7 @@
 ;;; digit       ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0"                   082
 ;;; alphabetic  ::= "a" | "b" | "c" | ... | "A" | "B" | "C" | ... etc.                          083
 ;;; special     ::= "*" | "-" | "+" | "/" | "@" | "#" | "%" | "&" | "<" | ">" |                 084
-;;;                 "←" | "=" | "\" | "?" | ":" | "~" | "!"                                     085
+;;;                 "←" | "=" | "\" | "?" | ":" | "~" | "↓"                                     085
 ;;; reserved    ::= "'" | ";" | "(" | ")" | "[" | "]" | "{" | "}" | "|" | """ |                 086
 ;;;                 "," | "." | "↑" | "`" | "$" | <space> | <end-of-line>                       087
 ;;;                                                                                             088
@@ -137,14 +138,14 @@
 ;;;                                                                                             114
 ;;;    a:  (  -- starts pairs                h:  .  -- in "[ ... ]" for JOIN                    115
 ;;;    b:  )  -- ends pairs                  i:  ↑  -- NAME                                     116
-;;;    c:  .  -- in "( ... )" for CDR        j:  !  -- REFERENT                                 117
+;;;    c:  .  -- in "( ... )" for CDR        j:  ↓  -- REFERENT                                 117
 ;;;    d:  [  -- starts rails               (k:  :  -- DYNAMIC)                                 118
 ;;;    e:  ]  -- ends rails                  l:  `  -- Backquote a la MACLISP                   119 [sic. capitalisation]
 ;;;    f:  '  -- starts handles              m:  ,  --    "      "  "    "                      120
 ;;;    g:  ;  -- starts comments (to CRLF)   n:  ~  -- Switch to MACLISP                        121
 ;;;                                                                                             122
 ;;;    A-g are primitive, h-m are sugar, and n in implementation-specific.  In                  123
-;;;    this implementation, since "!" is used for REFERENT (it should be                        124
+;;;    this implementation, since "↓" is used for REFERENT (it should be                        124
 ;;;    down-arrow), it is reserved rather than special.  Similarly, "~" is                      125
 ;;;    reserved in this implementation for the MACLISP escape.  Finally, the                    126
 ;;;    characters "{", "}", "|" and """ are reserved but not currently used                     127
@@ -471,19 +472,64 @@
 ;;; Declaration and Macros:                                                                     002
 ;;; =======================                                                                     003
                                                                                               ; 004
-(declare                                                                                      ; 005
-  (special                                                                                    ; 006
+;;;;;; Common Lisp compatibility.
+;;;;;; caseq -> case
+;;;;;; *catch -> catch
+;;;;;; *throw -> throw
+;;;;;; readch -> read-char
+;;;;;; / -> \ as escape
+
+;;;;;; Common Lisp compatibility.
+
+(proclaim                                                                                     ; 005
+  '(special                                                                                   ; 006
     3=simple-aliases 3=global-environment 3=states 3=level 3=break-flag                       ; 007
     3=in-use 3=readtable L=readtable S=readtable 3=a1 3=a2 3=a3 3=a4                          ; 008
     3=normalise-closure 3=reduce-closure 3=simple-closure 3=reflect-closure                   ; 009
-    3=id-closure 3=backquote-depth ignore 3=process)                                          ; 010
-  (*lexpr 3-read 3-read* 3-error))                                                            ; 011
-                                                                                              ; 012
+    3=id-closure 3=backquote-depth))                                                          ; 010
+;(proclaim '(ignore 3=process))
+
+;;;;;; http://www.bitsavers.org/pdf/mit/cadr/chinual_3rdEd_Mar81.pdf
+;;;;;;
+;;;;;; *lexpr Special Form
+;;;;;;        (*lexpr syml sym2 ... ) declares syml, sym2, etc. to
+;;;;;; be names of functions. In addition it prevents these functions from
+;;;;;; appearing in the list of functions referenced but not defined printed at
+;;;;;; the end of the compilation.
+;(proclaim '(type function 3-read                                                             ; 011
+;		 function 3-read*
+;		 function 3-error))
+
 ;;; (herald 3-LISP)                                                                             013
                                                                                               ; 014
-(eval-when (load eval compile)                                                                ; 015
+
+;;;;;; Common Lisp has no memq.
+(defun memq (x y) (member x y :test #'eq))
+
+;;;;;; Maclisp explodec and implode.
+;;;;;; https://www.cs.cmu.edu/Groups/AI/html/faqs/lang/lisp/part2/faq-doc-3.html
+(defun explodec (object)
+  (loop for char across (prin1-to-string object)
+        collect (intern (string char))))
+
+(defun implode (list)
+  (read-from-string (coerce (mapcar #'character list) 'string)))
+
+;;;;;; SBCL https://stackoverflow.com/questions/23624570/sbcl-forward-declaration-possible
+#+sbcl (declaim (sb-ext:muffle-conditions style-warning))
+
+;;;;;; Common Lisp compatibility.
+;;;;;; http://clhs.lisp.se/Body/s_eval_w.htm
+;;;;;; "The use of eval, compile, and load is deprecated."
+;;;;;;
+;;;;;; compile -> :compile-toplevel
+;;;;;; load    -> :load-toplevel
+;;;;;; eval    -> :execute
+
+(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 015
                                                                                               ; 016
-(defmacro list? (x) `(eq (typep ,x) 'list))                                                   ; 017
+;;;;;; Common Lisp: typep takes 2 arguments.
+(defmacro list? (x) `(typep ,x 'list))                                                        ; 017
 (defmacro 1st (l) `(car ,l))                                                                  ; 018
 (defmacro 2nd (l) `(cadr ,l))                                                                 ; 019
 (defmacro 3rd (l) `(caddr ,l))                                                                ; 020
@@ -492,8 +538,11 @@
                                                                                               ; 023
 (defmacro 3-primitive-simple-id (proc) `(cadr (3r-3rd (cdr ,proc))))                          ; 024
                                                                                               ; 025
+;;;;;; No fixp in Common Lisp
+(defun fixp (x) (integerp x))
+
 (defmacro 3-numeral (e) `(fixp ,e))                                                           ; 026
-(defmacro 3-boolean (e) `(memq ,e '($T $F)))                                                  ; 027
+(defmacro 3-boolean (e) `(member ,e '($T $F)))                                     ; 027
                                                                                               ; 028
 (defmacro 3-bind (vars vals env)                                                              ; 029
    `(cons '~RAIL~ (nconc (3-bind* ,vars ,vals) ,env)))                                        ; 030
@@ -512,9 +561,9 @@
 ;;; ------------   simply call 3-NORMALISE.  Sets up the loop variables                         043
 ;;;                and jumps to the top of the driving loop.                                    044
                                                                                               ; 045
-(defmacro 3-normalise* (exp env cont)                                                         ; 046
-   `(progn (setq 3=a1 ,exp 3=a2 ,env 3=a3 ,cont)                                              ; 047
-           (throw '3-main-loop 'nil)))                                                        ; 048
+;;;;;; Common Lisp: tail recursive.
+(defun 3-normalise* (exp env cont)                                                            ; 046
+   (3-normalise exp env cont))
                                                                                               ; 049
 ;;; The rest of the macro definitions are RAIL specific:                                        050
                                                                                               ; 051
@@ -531,7 +580,7 @@
 ;;; 3-STRIP*          -- Returns the last header of arg -- used for RPLACD, and                 062
 ;;; --------             to establish rail identify.  Steps down through headers.               063
                                                                                               ; 064
-(eval-when (load eval compile)                                                                ; 065
+(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 065
                                                                                               ; 066
 (defmacro 3-strip (rail)                                                                      ; 067
    `(do ((rest (cdr ,rail) (cdr rest)))                                                       ; 068
@@ -590,13 +639,18 @@
 ;;;      Form           MACLISP expansion       3-LISP expansion                                038
 ;;;                                                                                             039
 ;;;     1. ↑<exp>       (3-NAME <exp>)          (NAME <exp>)                                    040
-;;;     2. !<exp>       (3-REF <exp>)           (REFERENT <exp> (current-env))                  041
+;;;     2. ↓<exp>       (3-REF <exp>)           (REFERENT <exp> (current-env))                  041
                                                                                               ; 042
-(eval-when (load eval compile)                                                                ; 043
+
+(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 043
                                                                                               ; 044
 ;;; Five constants needed to be defined for 3-LISP structures to be read in:                    045
                                                                                               ; 046
-(setq S=readtable readtable                       ; Save the system readtable                 ; 047
+
+;;;;;; Common Lisp compatibility.
+;;;;;; readtable -> *readtable*
+
+(setq S=readtable *readtable*                     ; Save the system readtable                 ; 047
       L=readtable (copy-readtable)                ; and name two special ones:                ; 048
       3=readtable (copy-readtable)                ; one for LISP, one for 3-LISP.             ; 049
       3=simple-aliases nil                        ; Make these NIL so we can read             ; 050
@@ -605,37 +659,106 @@
 ;;; The following has been modified from the original MACLISP to enable it to                   053
 ;;; operate under the I/O protocols of the MIT LISP machine:                                    054
                                                                                               ; 055
-(login-setq readtable L=readtable)                ; Needed in order to read this file.        ; 056
+;;;;;; Common Lisp compatibility.
+;;;;;; login-setq -> setq
+
+(setq *readtable* L=readtable)                    ; Needed in order to read this file.        ; 056
                                                                                               ; 057
-(let ((readtable L=readtable))                                                                ; 058
-   (set-syntax-macro-char #/\ #'(lambda (l s) (3-read s)))                                    ; 059
-   (set-syntax-macro-char #/↑ #'(lambda (l s) `(cons '~QUOTE~ ,(read s))))                    ; 060
-   (set-syntax-macro-char #/! #'(lambda (l s) `(3-ref ,(read s))))                            ; 061
-   (set-syntax-from-description #/] 'si:single))        ; So "~FOO]" will work.               ; 062
+;;;;;; Common Lisp compatibility.
+
+;;;;;; There is no (set-syntax-from-description) in common lisp and there is no
+;;;;;; "self-delimiting single-character" symbols (see
+;;;;;; http://www.bitsavers.org/pdf/mit/cadr/chinual_5thEd_Jan83/chinualJan83_21_IOsystem.pdf,
+;;;;;; p. 381).
+;;;;;;
+;;;;;; See CLTL 22.1.1 (p. 554).
+
+(defun single-macro-character (stream char)
+  (declare (ignore stream))
+  (intern (string char)))
+
+;;;;;; set-macro-character second argument takes (stream character).
+
+(let ((*readtable* L=readtable))                                                              ; 058
+   (set-macro-character #\\ #'(lambda (s c) (3-read s)))                                      ; 059
+   (set-macro-character #\↑ #'(lambda (s c) `(cons '~QUOTE~ ,(read s))))                      ; 060
+   (set-macro-character #\↓ #'(lambda (s c) `(3-ref ,(read s))))                              ; 061
+   (set-macro-character #\] #'single-macro-character))        ; So "~FOO]" will work.         ; 062
                                                                                   ; Page 3:1  ; [sic. no line number]
                                                                                               ; 063
-(let ((readtable 3=readtable))                                                                ; 064
-   (set-syntax-macro-char #/~ #'(lambda (l s) (let ((readtable L=readtable)) (read s))))      ; 065
-   (set-syntax-macro-char #/! #'(lambda (l s) `(referent ~RAIL~ ,(3-read* s)                  ; 066
+(let ((*readtable* 3=readtable))                                                              ; 064
+   (set-macro-character #\~ #'(lambda (s c) (let ((*readtable* L=readtable)) (read s))))      ; 065
+   (set-macro-character #\↓ #'(lambda (s c) `(referent ~RAIL~ ,(3-read* s)                    ; 066
                                                          (current-env ~RAIL~))))              ; 067
-   (set-syntax-macro-char #/↑ #'(lambda (l s) `(name ~RAIL~ ,(3-read* s))))                   ; 068
-   (set-syntax-macro-char #/' #'(lambda (l s) `(~QUOTE~ . ,(3-read* s))))                     ; 069
-   (set-syntax-macro-char #/( #'(lambda (l s) (3-read-pair s)))                               ; 070
-   (set-syntax-macro-char #/[ #'(lambda (l s) (3-read-rail s)))                               ; 071
-   (set-syntax-macro-char #/` #'(lambda (l s) (3-backq-macro s)))                             ; 072
-   (set-syntax-macro-char #/, #'(lambda (l s) (3-comma-macro s)))                             ; 073
-   (set-syntax-from-description #/) 'si:single)                                               ; 074
-   (set-syntax-from-description #// 'si:single)                                               ; 075
-   (set-syntax-from-description #/$ 'si:single)                                               ; 076
-   (set-syntax-from-description #/] 'si:single)                                               ; 077
-   (set-syntax-from-description #/. 'si:single))                                              ; 078
+   (set-macro-character #\↑ #'(lambda (s c) `(name ~RAIL~ ,(3-read* s))))                     ; 068
+   (set-macro-character #\' #'(lambda (s c) `(~QUOTE~ . ,(3-read* s))))                       ; 069
+   (set-macro-character #\( #'(lambda (s c) (3-read-pair s)))                                 ; 070
+   (set-macro-character #\[ #'(lambda (s c) (3-read-rail s)))                                 ; 071
+   (set-macro-character #\` #'(lambda (s c) (3-backq-macro s)))                               ; 072
+   (set-macro-character #\, #'(lambda (s c) (3-comma-macro s)))                               ; 073
+   (set-macro-character #\) #'single-macro-character)                                         ; 074
+   (set-macro-character #\/ #'single-macro-character)                                         ; 075
+   (set-macro-character #\$ #'single-macro-character)                                         ; 076
+   (set-macro-character #\] #'single-macro-character)                                         ; 077
+   (set-macro-character #\. #'single-macro-character))                                        ; 078
                                                                                               ; 079
+;;; 3-ERROR   General error handler.  MESSAGE is to be printed by MACLISP's                     005
+;;; -------   PRINC, whereas EXPR is printed by 3-PRINT.                                        006
+                                                                                              ; 007
+(defun 3-error (message &optional expr (label '|ERROR: |))                                    ; 008
+    (terpri)                                                                                  ; 009
+    (princ label)                                                                             ; 010
+    (if (atom message)                                                                        ; 011
+        (princ message)                                                                       ; 012
+        (mapc #'(lambda (el) (princ el) (princ '| |))                                         ; 013
+              message))                                                                       ; 014
+    (if expr (3-print expr))                                                                  ; 015
+;;;;;; Common Lisp: different break. What is 3-bkpt?
+    (break)                                                                                   ; 016
+    (if 3=in-use                                                                              ; 017
+        (throw '3-level-loop nil)                                                             ; 018
+        (3-lisp)))                                                                            ; 019
+                                                                                              ; 020
+
+;;; 3-TYPE-ERROR                       3-ILLEGAL-CHAR                                           021
+;;; 3-INDEX-ERROR                      3-ILLEGAL-ATOM                                           022
+;;; 3-IMPLEMENTATION-ERROR             3-ILLEGAL-BOOLEAN                                        023
+;;; ----------------------             -----------------                                        024
+                                                                                              ; 025
+(defun 3-type-error (exp type)                                                                ; 026
+   (3-error `(expected a ,(implode `(,@(explodec type) #\,))                                  ; 027
+                       but found the ,(3-type exp))                                           ; 028
+             exp '|TYPE-ERROR: |))                                                            ; 029
+                                                                                              ; 030
+(defun 3-ref-type-error (exp type)                                                            ; 031
+  (3-error `(expected a ,(implode `(,@(explodec type) #\,))                                   ; 032
+                      but found the ,(3-ref-type exp))                                        ; 033
+           exp `|TYPE-ERROR: |))                                                              ; 034
+                                                                                              ; 035
+(defun 3-index-error (n rail)                                                                 ; 036
+  (3-error `(,n is out of range for) rail '|INDEX-ERROR: |))                                  ; 037
+                                                                                              ; 038
+(defun 3-implementation-error () (3-error '|Illegal implementation state!|))                  ; 039
+                                                                                              ; 040
+(defun 3-illegal-char (char)                                                                  ; 041
+   (3-error `(unexpected ,(implode `(|"| ,@(explodec char) |"|)))                             ; 042
+            nil '|NOTATION-ERROR: |))                                                         ; 043
+                                                                                              ; 044
+(defun 3-illegal-boolean (exp)                                                                ; 045
+   (3-error `(expected a boolean\, but found ,(implode `($ ,@(explodec exp))))                ; 046
+            nil '|NOTATION-ERROR: |))                                                         ; 047
+                                                                                              ; 048
+(defun 3-illegal-atom (atom)                                                                  ; 049
+   (3-error `(The atom ,atom is reserved in this implementation)                              ; 050
+            nil '|STRUCTURE-ERROR: |))                                                        ; 051
+                                                                                              ; 052
+
 ;;; 3-READ(*)  Read in one 3-LISP s-expression (*-version assumes the                           080
 ;;;            3-LISP readtable is already in force, and accepts an                             081
 ;;;            optional list of otherwise illegal atoms to let through).                        082
                                                                                               ; 083
 (defun 3-read (&optional stream)                                                              ; 084
-   (let ((readtable 3=readtable)) (3-read* stream)))                                          ; 085
+   (let ((*readtable* 3=readtable)) (3-read* stream)))                                        ; 085
                                                                                               ; 086
 (defun 3-read* (stream &optional OK)                                                          ; 087
    (let ((token (read stream)))                                                               ; 088
@@ -643,13 +766,13 @@
             ((memq token '(|)| |.| |]|)) (3-illegal-char token))                              ; 090
             ((or (memq token '(~RAIL~ ~QUOTE~ NIL))                                           ; 091
                  (memq token 3=simple-aliases)) (3-illegal-atom token))                       ; 092
-            ((eq token '/$) (3-read-boolean stream))                                          ; 093
+            ((eq token '\$) (3-read-boolean stream))                                          ; 093
             (t token))))                                                                      ; 094
                                                                                               ; 095
 (defun 3-read-boolean (stream)                                                                ; 096
-   (let ((a (readch stream)))                                                                 ; 097
-      (cond ((memq a '(T /t)) '$T)                                                            ; 098
-            ((memq a '(F /f)) '$F)                                                            ; 099
+   (let ((a (read-char stream)))                                                              ; 097
+      (cond ((memq a '(#\T #\t)) '$T)                                                         ; 098
+            ((memq a '(#\F #\f)) '$F)                                                         ; 099
             (t (3-illegal-boolean a)))))                                                      ; 100
                                                                                               ; 101
 (defun 3-read-pair (stream)                                                                   ; 102
@@ -670,9 +793,18 @@
                                                                                               ; 117
 )                                       ; End of eval-when                                    ; 118
                                                                                   ; Page 3:2  ; [sic. no line number]
-(eval-when (eval load compile)          ; Start another eval-when, since the following        ; 119
+(eval-when (:execute :load-toplevel :compile-toplevel)
+					; Start another eval-when, since the following        ; 119
                                         ; needs to be read in using 3-READ                    ; 120
                                                                                               ; 121
+(defun 3-type (exp)                                                                           ; 007
+    (cond ((fixp exp) 'numeral)                                                               ; 008
+          ((memq exp '($T $F)) 'boolean)                                                      ; 009
+          ((symbolp exp) 'atom)                                                               ; 010
+          ((eq (car exp) '~RAIL~) 'rail)                                                      ; 011
+          ((eq (car exp) '~QUOTE~) 'handle)                                                   ; 012
+          (t 'pair)))                                                                         ; 013
+
 ;;; BACKQUOTE    3-BACKQ-MACRO and 3-COMMA-MACRO are run on reading: they                       122
 ;;; ---------    put calls to ~3-BACKQUOTE and ~3-COMMA into the structures                     123
 ;;;              they build, which are then run on exit.  This allows the                       124
@@ -692,7 +824,7 @@
 ;;; happen if possible).                                                                        138
                                                                                               ; 139
 (defun 3-expand (x f)                                                                         ; 140
-   (caseq (3-type x)                                                                          ; 141
+   (case (3-type x)                                                                           ; 141
       (PAIR (3-expand-pair x f))                                                              ; 142
       (RAIL (3-expand-rail x f))                                                              ; 143
       (T ↑x)))                                                                                ; 144
@@ -708,11 +840,19 @@
                    `\(PCONS ~,a ~,d))))))       ; else use MACLISP's backquote                ; 154
                                                 ; to form a call to PCONS.                    ; 155
                                                                                               ; 156
+
+;;;;;; AND is a macro in Common Lisp and cannot be applied. (Huh?)
+
+(defun aand (&rest args)
+  (cond ((null args) t)
+	((car args) (apply #'aand (cdr args)))
+	(nil)))
+
 (defun 3-expand-rail (rail f)                                                                 ; 157
    (do ((rail (3-strip rail) (3-strip rail))                                                  ; 158
         (elements nil (cons (3-expand (car rail) t) elements)))                               ; 159
        ((null rail)                                                                           ; 160
-        (if (and f (apply 'and (mapcar '3-handle elements)))                                  ; 161
+        (if (and f (apply 'aand (mapcar '3-handle elements)))                                 ; 161
             ↑(cons '~RAIL~ (mapcar 'cdr (nreverse elements)))                                 ; 162
             `(RCONS ~RAIL~ ,@(nreverse elements))))))                                         ; 163
                                                                                               ; 164
@@ -726,13 +866,13 @@
 ;;;            of a sort that would be generated by Z).                                         171
                                                                                               ; 172
 (defun 3-print (exp)                                                                          ; 173
-   (caseq (3-type exp)                                                                        ; 174
+   (case (3-type exp)                                                                         ; 174
       (numeral (princ exp))                                                                   ; 175
       (boolean (princ exp))                                                                   ; 176
       (atom    (if (memq exp 3=simple-aliases)                                                ; 177
                    (princ '<simple>)                                                          ; 178
                    (prin1 exp)))                                                              ; 179
-      (handle  (princ '|'|) (3-print !exp))                                                   ; 180
+      (handle  (princ '|'|) (3-print ↓exp))                                                   ; 180
       (pair    (cond ((eq exp 3=simple-closure) (princ '<simple>))                            ; 181
                      ((eq exp 3=reflect-closure) (princ '<reflect>))                          ; 182
                      (t (princ '|(|)                                                          ; 183
@@ -742,7 +882,8 @@
                                 (progn (princ '| <circular-env>|)                             ; 187
                                        (3-print-elements (cddr exp) 't))                      ; 188
                                 (3-print-elements (cdr exp) 't))                              ; 189
-                            (princ '| . |) (3-print (cdr exp)))                               ; 190
+;;;;;; ELSE is 1-form in Common Lisp IF.
+                            (progn (princ '| . |) (3-print (cdr exp))))                       ; 190
                         (princ '|)|))))                                                       ; 191
       (rail    (princ '|[|)                                                                   ; 192
                (3-print-elements exp 'nil)                                                    ; 193
@@ -759,9 +900,8 @@
             (3-print (car list)))))                                                           ; 204
                                                                                               ; 205
 (defun 3-prompt (level)                                                                       ; 206
-   (terpri)                                                                                   ; 207
-   (princ level)                                                                              ; 208
-   (princ '|> |))                                                                             ; 209
+   (format t "~%~D> " level)                                                                  ; 207
+   (finish-output))
                                                                                               ; 210
 (defun 3-circular-closure-p (exp)                                                             ; 211
    (and (< 0 (3-length (cdr exp)))                                                            ; 212
@@ -771,9 +911,9 @@
             (and (3-rail env?)                                                                ; 216
                  (< 1 (3-length env?))                                                        ; 217
                  (3-handle (3r-1st env?))                                                     ; 218
-                 (3-atom !(3r-1st env?))                                                      ; 219
+                 (3-atom ↓(3r-1st env?))                                                      ; 219
                  (3-handle (3r-2nd env?))                                                     ; 220
-                 (eq exp !(3r-2nd env?))))))                                                  ; 221
+                 (eq exp ↓(3r-2nd env?))))))                                                  ; 221
                                                                                               ; 222
                                                                                   ; Page 4    ; [sic. no line number]
                                                                                               ; 001
@@ -801,7 +941,7 @@
       `\(~~C0~ [['proc ~,↑proc] ['args ~,↑args] ['env ~,↑env] ['cont ~,↑cont]]  ; C0          ; 023
                '[proc*]                                                                       ; 024
                '(selectq (procedure-type proc*)                                               ; 025
-                  [reflect ((simple . !(cdr proc*)) args env cont)]                           ; 026
+                  [reflect ((simple . ↓(cdr proc*)) args env cont)]                           ; 026
                   [simple (normalise args env (make-c1 proc* cont))]))))                      ; 027
                                                                                               ; 028
 ;;; 3-NORMALISE-RAIL    Normalise (the first element of) a rail.                                029
@@ -824,38 +964,38 @@
 (defun 3-primitive-reduce-simple (proc args cont)                                             ; 046
   (3-rail-check args)                                                                         ; 047
   (if (eq proc 'referent)                                                                     ; 048
-      (3-normalise* !(3r-1st args) (3r-2nd args) cont)                                        ; 049
+      (3-normalise* ↓(3r-1st args) (3r-2nd args) cont)                                        ; 049
       (3-apply cont                                                                           ; 050
-        (caseq proc                                                                           ; 051
+        (case proc                                                                            ; 051
           (simple   `(,3=simple-closure . ,args))                                             ; 052
           (reflect  `(,3=reflect-closure . ,args))                                            ; 053
           (type     ↑(3-ref-type (3r-1st args)))                                              ; 054
           (ef       (if (eq (3-bool-check (3r-1st args)) '$T)                                 ; 055
                         (3r-2nd args) (3r-3rd args)))                                         ; [sic. no line number]
-          (pcons    ↑(cons !(3r-1st args) !(3r-2nd args)))                                    ; 056
-          (car      ↑(car (3-pair-check !(3r-1st args))))                                     ; 057
-          (cdr      ↑(cdr (3-pair-check !(3r-1st args))))                                     ; 058
+          (pcons    ↑(cons ↓(3r-1st args) ↓(3r-2nd args)))                                    ; 056
+          (car      ↑(car (3-pair-check ↓(3r-1st args))))                                     ; 057
+          (cdr      ↑(cdr (3-pair-check ↓(3r-1st args))))                                     ; 058
           (length   (3-length (3r-1st args)))                                                 ; 059
           (nth      (3-nth (3r-1st args) (3r-2nd args)))                                      ; 060
           (tail     (3-tail (3r-1st args) (3r-2nd args)))                                     ; 061
           (prep     (3-prep (3r-1st args) (3r-2nd args)))                                     ; 062
           (rcons    (3-rcons (3-rail-check args)))                                            ; 063
           (scons    (3-scons (3-rail-check args)))                                            ; 064
-          (rplaca   ↑(rplaca (3-pair-check !(3r-1st args)) !(3r-2nd args)))                   ; 065
-          (rplacd   ↑(rplacd (3-pair-check !(3r-1st args)) !(3r-2nd args)))                   ; 066
-          (rplacn   ↑(3-rplacn (3r-1st args) !(3r-2nd args) !(3r-3rd args)))                  ; 067
-          (rplact   ↑(3-rplact (3r-1st args) !(3r-2nd args) !(3r-3rd args)))                  ; 068
+          (rplaca   ↑(rplaca (3-pair-check ↓(3r-1st args)) ↓(3r-2nd args)))                   ; 065
+          (rplacd   ↑(rplacd (3-pair-check ↓(3r-1st args)) ↓(3r-2nd args)))                   ; 066
+          (rplacn   ↑(3-rplacn (3r-1st args) ↓(3r-2nd args) ↓(3r-3rd args)))                  ; 067
+          (rplact   ↑(3-rplact (3r-1st args) ↓(3r-2nd args) ↓(3r-3rd args)))                  ; 068
 	                                                                          ; Page 4:1  ; [sic. no line number]
           (=        (if (3-equal (3r-1st args) (3r-2nd args)) '$T '$F))                       ; 069
           (read     ↑(3-read))                                                                ; 070
-          (print    (3-print !(3r-1st args)) (princ '/ ) '$T)                                 ; 071
+          (print    (3-print ↓(3r-1st args)) (princ '/ ) '$T)                                 ; 071
           (terpri   (terpri) '$T)                                                             ; 072
           (+        (+ (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 073
           (*        (* (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 074
           (-        (- (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 075
-          (//       (// (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))             ; 076
+          (/        (/ (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 076
           (name     ↑(3r-1st args))                                                           ; 077
-          (*rebind  (3-rebind !(3r-1st args) (3r-2nd args) (3r-3rd args)))  ; for             ; 078
+          (*rebind  (3-rebind ↓(3r-1st args) (3r-2nd args) (3r-3rd args)))  ; for             ; 078
           (level    3=level)                                                ; efficiency      ; 079
           (t (3-implementation-error))))))                                                    ; 080
                                                                                   ; Page 5    ; 001
@@ -871,10 +1011,10 @@
                                                                                               ; 011
 (defmacro 3a-env (cont) `(3r-1st (cdr ,cont)))                                                ; 012
 (defmacro 3a-arg (cont) `(3r-2nd (cdr ,cont)))                                                ; 013
-(defmacro 3a-1st (env)  `!(3r-2nd (3r-1st ,env)))                                             ; 014
-(defmacro 3a-2nd (env)  `!(3r-2nd (3r-2nd ,env)))                                             ; 015
-(defmacro 3a-3rd (env)  `!(3r-2nd (3r-3rd ,env)))                                             ; 016
-(defmacro 3a-4th (env)  `!(3r-2nd (3r-4th ,env)))                                             ; 017
+(defmacro 3a-1st (env)  `↓(3r-2nd (3r-1st ,env)))                                             ; 014
+(defmacro 3a-2nd (env)  `↓(3r-2nd (3r-2nd ,env)))                                             ; 015
+(defmacro 3a-3rd (env)  `↓(3r-2nd (3r-3rd ,env)))                                             ; 016
+(defmacro 3a-4th (env)  `↓(3r-2nd (3r-4th ,env)))                                             ; 017
                                                                                               ; 018
 (defun 3-apply (cont normal-form)                                                             ; 019
   (let ((env (3a-env cont)))                                                                  ; 020
@@ -889,25 +1029,25 @@
 ;;;      primitive reflective, go do it; otherwise reflect up explicitly.                       029
                                                                                               ; 030
 (defun ~C0~ (env cont proc)                                                                   ; 031
-  ignore cont                                                                                 ; 032
+  (declare (ignore cont))                                                                     ; 032
   (let ((args (3a-2nd env))                                                                   ; 033
         (env  (3a-3rd env))                                                                   ; 034
         (cont (3a-4th env)))                                                                  ; 035
-     (caseq (3-proc-type proc)                                                                ; 036
+     (case (3-proc-type proc)                                                                 ; 036
        (simple (3-normalise* args env                                                         ; 037
                  `\(~~C1~ [['proc ~,↑proc] ['args ~,↑args]      ; C1                          ; 038
                            ['env ~,↑env] ['cont ~,↑cont]]                                     ; 039
                           '[args*]                                                            ; 040
                           '(cond [(= proc* ↑referent)                                         ; 041
-                                 (normalise !(1st args) !(2nd args) cont)]                    ; 042 [sic. indentation]
-                                 [(primitive proc*) (cont ↑(!proc* . !args*))]                ; 043
+                                 (normalise ↓(1st args) ↓(2nd args) cont)]                    ; 042 [sic. indentation]
+                                 [(primitive proc*) (cont ↑(↓proc* . ↓args*))]                ; 043
                                  [$T (normalise (body proc*)                                  ; 044
                                                 (bind (pattern proc*) args* (env proc*))      ; 045
                                                 cont)]))))                                    ; 046 [sic. indentation]
        (reflect (let ((nlevel (3-increment-level))      ; REFLECT UP!                         ; 047
                       (proc (cdr proc)))                ; ===========                         ; 048
-                  (3-normalise* !(3r-3rd proc)                                                ; 049
-                                (3-bind !(3r-2nd proc)                                        ; 050
+                  (3-normalise* ↓(3r-3rd proc)                                                ; 049
+                                (3-bind ↓(3r-2nd proc)                                        ; 050
                                         `\[~,↑args ~,env ~,cont]                              ; 051
                                         (3r-1st proc))                                        ; 052
                                 (cdr nlevel)))))))                                            ; 053
@@ -919,7 +1059,7 @@
 ;;;      to NORMALISE and REDUCE, for efficinecy.                                               058
                                                                                               ; 059
 (defun ~C1~ (env cont args*)                                                                  ; 060
-   ignore cont                                                                                ; 061
+   (declare (ignore cont))                                                                    ; 061
    (let ((proc (3a-1st env)))                                                                 ; 062
       (cond ((eq (car proc) '~PRIM~)                                                          ; 063
              (3-argument-check args* proc)                                                    ; 064
@@ -928,29 +1068,29 @@
                                         (3a-4th env)))                                        ; 067
             ((memq (car proc) 3=simple-aliases)                                               ; 068
              (3-drop-level (3a-3rd env) (3a-4th env))           ; REFLECT DOWN                ; 069
-             (3-apply proc !(3r-1st args*)))                    ; ============                ; 070
+             (3-apply proc ↓(3r-1st args*)))                    ; ============                ; 070
             ((eq proc 3=normalise-closure)                                                    ; 071
              (3-drop-level (3a-3rd env) (3a-4th env))           ; REFLECT DOWN                ; 072
-             (3-normalise* !(3r-1st args*)                      ; ============                ; 073
+             (3-normalise* ↓(3r-1st args*)                      ; ============                ; 073
                            (3r-2nd args*)                                                     ; 074
                            (3r-3rd args*)))                                                   ; 075
             ((eq proc 3=reduce-closure)                                                       ; 076
              (3-drop-level (3a-3rd env) (3a-4th env))           ; REFLECT DOWN                ; 077
-             (3-reduce !(3r-1st args*)                          ; ============                ; 078
-                       !(3r-2nd args*)                                                        ; 079
+             (3-reduce ↓(3r-1st args*)                          ; ============                ; 078
+                       ↓(3r-2nd args*)                                                        ; 079
                        (3r-3rd args*)                                                         ; 080
                        (3r-4th args*)))                                                       ; 081
             (t (let ((proc* (cdr proc)))                                                      ; 082
                   (3-normalise*                                                               ; 083
-                        !(3r-3rd proc*)                                                       ; 084
-                        (3-bind !(3r-2nd proc*) args* (3r-1st proc*))                         ; 085
+                        ↓(3r-3rd proc*)                                                       ; 084
+                        (3-bind ↓(3r-2nd proc*) args* (3r-1st proc*))                         ; 085
                         (3a-4th env)))))))                                                    ; 086
                                                                                               ; 087
 ;;; C2:  Accept the normalised first element in a rail fragment.                                088
 ;;; ---  Normalise the rest.                                                                    089
                                                                                               ; 090
 (defun ~C2~ (env cont element*)                                                               ; 091
-   ignore cont                                                                                ; 092
+   (declare (ignore cont))                                                                    ; 092
    (3-normalise-rail                                                                          ; 093
         (3-tail* 1 (3a-1st env))                                                              ; 094
         (3a-2nd env)                                                                          ; 095
@@ -962,7 +1102,7 @@
 ;;; ---  element on the front.                                                                  101
                                                                                               ; 102
 (defun ~C3~ (env cont rest*)                                                                  ; 103
-   ignore cont                                                                                ; 104
+   (declare (ignore cont))                                                                    ; 104
    (3-apply (3a-4th env) (nconc `\[~,(3a-1st env)] rest*)))                                   ; 105
                                                                                               ; 106
 ;;; C4:  Accept an expression normalised for the top level of a                                 107
@@ -974,7 +1114,7 @@
                                                                                               ; 113
 (defun ~C4~ (env cont normal-form)                                                            ; 114
    (3-prompt 3=level)                                                                         ; 115
-   (3-print !normal-form)                                                                     ; 116
+   (3-print ↓normal-form)                                                                     ; 116
    (3-prompt 3=level)                                                                         ; 117
    (3-drop-level 3=global-environment cont)                                                   ; 118
    (3-normalise* (3-read) (3-binding 'env env) 3=id-closure))                                 ; 119
@@ -983,15 +1123,15 @@
 ;;; ---  IN-3-LISP macro.  Return answer to the caller.                                         122
                                                                                               ; 123
 (defun ~C5~ (env cont normal-form)                                                            ; 124
-   ignore env cont                                                                            ; 125
-   (*throw '3-exit normal-form))                                                              ; 126
+   (declare (ignore env cont))                                                                ; 125
+   (throw '3-exit normal-form))                                                               ; 126
                                                                                               ; 127
 (defun 3-argument-check (args proc)                                                           ; 128
-  (let ((pattern !(3r-2nd (cdr proc))))                                                       ; 129
+  (let ((pattern ↓(3r-2nd (cdr proc))))                                                       ; 129
     (if (and (3-rail pattern)                                                                 ; 130
              (not (= (3-length args) (3-length pattern))))                                    ; 131
         (3-error '|Wrong number of arguments to a primitive: |                                ; 132
-                 `\(~,(car !(3r-3rd proc)) . ~,args)))))                                      ; 133
+                 `\(~,(car ↓(3r-3rd proc)) . ~,args)))))                                      ; 133
                                                                                               ; 134
                                                                                   ; Page 6    ; 001
 ;;; Environments:                                                                               002
@@ -1005,7 +1145,7 @@
    (3-rail-check env)                                                                         ; 010
    (do ((env (3-strip env) (3-strip env)))                                                    ; 011
        ((null env) (3-error `(,var unbound variable -- BINDING)))                             ; 012
-      (if (eq var !(3r-1st (car env))) (return !(3r-2nd (car env))))))                        ; 013
+      (if (eq var ↓(3r-1st (car env))) (return ↓(3r-2nd (car env))))))                        ; 013
                                                                                               ; 014
 ;;; 3-BIND   Bind variable structure to argument structure.  Destructures on                    015
 ;;; ------   rails and sequences.  For efficiency, does rail manipulation by                    016
@@ -1013,39 +1153,40 @@
 ;;;          MACLISP rail designator, NREVERSEd on exit.                                        018
                                                                                               ; 019
 (defun 3-bind* (pattern vals)                                                                 ; 020
-  (caseq (3-type pattern)                                                                     ; 021
+  (case (3-type pattern)                                                                      ; 021
     (atom `(\[~,↑pattern ~,↑vals]))                                                           ; 022
-    (rail (caseq (3-type vals)                                                                ; 023
+    (rail (case (3-type vals)                                                                 ; 023
            (rail (do ((binds nil (nconc (3-bind* (car pattern) (car vals)) binds))            ; 024
                       (pattern (3-strip pattern) (3-strip pattern))                           ; 025
                       (vals (3-strip vals) (3-strip vals)))                                   ; 026
                      ((or (null pattern) (null vals))                                         ; 027
                       (cond ((and (null pattern) (null vals))                                 ; 028
                              (nreverse binds))                                                ; 029
-                            ((null vals) (3-error '|Too few arguments supplied|))             ; 030
-                            (t (3-error '|Too many arguments supplied|))))))                  ; 031
-           (handle (if (3-rail !vals)                                                         ; 032
+                            ((null vals) (3-error '|Too few arguments supplied to rail|))     ; 030
+                            (t (3-error '|Too many arguments supplied to rail|))))))          ; 031
+           (handle (if (3-rail ↓vals)                                                         ; 032
                        (do ((binds nil (nconc (3-bind* (car pattern) ↑(car vals))             ; 033
                                               binds))                                         ; 034
                             (pattern (3-strip pattern) (3-strip pattern))                     ; 035
-                            (vals (3-strip !vals) (3-strip vals)))                            ; 036
+                            (vals (3-strip ↓vals) (3-strip vals)))                            ; 036
                            ((or (null pattern) (null vals))                                   ; 037
                             (cond ((and (null pattern) (null vals))                           ; 038
                                    (nreverse binds))                                          ; 039
                                   ((null vals) (3-error '|Too few arguments supplied|))       ; 040
                                   (t (3-error '|Too many arguments supplied|)))))             ; 041
-                       (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|)))                ; 042
-           (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                        ; 043
+                       (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to handle|)))      ; 042
+           (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to rail|))))                ; 043
     (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                               ; 044
                                                                                               ; 045
 (defun 3-rebind (var binding env)                                                             ; 046
    (3-atom-check var)                                                                         ; 047
    (3-rail-check env)                                                                         ; 048
    (if (not (3-normal binding))                                                               ; 049
-       (3-error '(binding not in normal form -- REBIND/:) binding))                           ; 050
+;;;;;; illegal terminating character after a colon: #\)
+       (3-error '(binding not in normal form -- REBIND) binding))                             ; 050
    (do ((env (3-strip* env) (3-strip* (cdr env))))                                            ; 051
        ((null (cdr env)) (nconc env `\[[~,↑var ~,binding]]))                                  ; 052
-      (if (eq var !(3r-1st (cadr env)))                                                       ; 053
+      (if (eq var ↓(3r-1st (cadr env)))                                                       ; 053
           (return (3-rplacn 2 (cadr env) binding))))                                          ; 054
    binding)                                                                                   ; 055
                                                                                               ; 056
@@ -1085,7 +1226,7 @@
                                                                                               ; 009
 (defun 3-rcons (args)                                                                         ; 010
   (do ((args (3-strip (3-rail-check args)) (3-strip args))                                    ; 011
-       (new nil (cons !(car args) new)))                                                      ; 012
+       (new nil (cons ↓(car args) new)))                                                      ; 012
       ((null args) ↑(cons '~RAIL~ (nreverse new)))))                                          ; 013
                                                                                               ; 014
 (defun 3-scons (args)                                                                         ; 015
@@ -1097,7 +1238,7 @@
 ;;; ----  and wraps the appropariate type dispatch around them.                                 021
                                                                                               ; 022
 (defmacro 3-rs (exp rail-form seq-form)                                                       ; 023
-   `(caseq (3-type ,exp)                                                                      ; 024
+   `(case (3-type ,exp)                                                                       ; 024
        (handle ,rail-form)                                                                    ; 025
        (rail ,seq-form)                                                                       ; 026
        (t (3-ref-type-err ,exp '|RAIL OR SEQUENCE|))))                                        ; 027
@@ -1108,19 +1249,19 @@
 ;;; 3-NTH                                                                                       032
                                                                                               ; 033
 (defun 3-prep (el exp)                                                                        ; 034
-   (3-rs exp ↑(list* '~RAIL~ !el (3-rail-check !exp))                                         ; 035
+   (3-rs exp ↑(list* '~RAIL~ ↓el (3-rail-check ↓exp))                                         ; 035
               (list* '~RAIL~ el exp)))                                                        ; 036
                                                                                               ; 037
 (defun 3-length (exp)                                                                         ; 038
-   (3-rs exp (3-length* (3-rail-check !exp))                                                  ; 039
+   (3-rs exp (3-length* (3-rail-check ↓exp))                                                  ; 039
              (3-length* exp)))                                                                ; 040
                                                                                               ; 041
 (defun 3-tail (n exp)                                                                         ; 042
-   (3-rs exp ↑(3-tail* n (3-rail-check !exp))                                                 ; 043
+   (3-rs exp ↑(3-tail* n (3-rail-check ↓exp))                                                 ; 043
               (3-tail* n exp)))                                                               ; 044
                                                                                               ; 045
 (defun 3-nth (n exp)                                                                          ; 046
-   (3-rs exp ↑(car (3-nthcdr* n (3-rail-check !exp)))                                         ; 047
+   (3-rs exp ↑(car (3-nthcdr* n (3-rail-check ↓exp)))                                         ; 047
               (car (3-nthcdr* n exp))))                                                       ; 048
                                                                                               ; 049
 ;;; 3-RPLACN   Defined onlu on RAILS.                                                           050
@@ -1186,15 +1327,8 @@
 ;;; Typing and Type Checking:                                                                   002
 ;;; =========================                                                                   003
                                                                                               ; 004
-(eval-when (load eval compile)                  ; Backquote needs this                        ; 005
+(eval-when (:load-toplevel :execute :compile-toplevel) ; Backquote needs this                 ; 005
                                                                                               ; 006
-(defun 3-type (exp)                                                                           ; 007
-    (cond ((fixp exp) 'numeral)                                                               ; 008
-          ((memq exp '($T $F)) 'boolean)                                                      ; 009
-          ((symbolp exp) 'atom)                                                               ; 010
-          ((eq (car exp) '~RAIL~) 'rail)                                                      ; 011
-          ((eq (car exp) '~QUOTE~) 'handle)                                                   ; 012
-          (t 'pair)))                                                                         ; 013
                                                                                               ; 014
 )                                               ; end of eval-when                            ; 015
                                                                                               ; 016
@@ -1204,7 +1338,7 @@
 (defun 3-rail (e) (and (list? e) (eq (car e) '~RAIL~)))                                       ; 020
 (defun 3-pair (e) (eq (3-type e) 'pair))                                                      ; 021
                                                                                               ; 022
-(eval-when (load eval compile)                                                                ; 023
+(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 023
 (defun 3-handle (e)  (and (list? e) (eq (car e) '~QUOTE~)))                                   ; 024
 )                                                                                             ; 025
                                                                                               ; 026
@@ -1219,7 +1353,7 @@
 ;;; ----------   object encoded as the argument.                                                035
                                                                                               ; 036
 (defun 3-ref-type (exp)                                                                       ; 037
-  (caseq (3-type exp)                                                                         ; 038
+  (case (3-type exp)                                                                          ; 038
     (numeral 'number)                                                                         ; 039
     (boolean 'truth-value)                                                                    ; 040
     (rail    'sequence)                                                                       ; 041
@@ -1228,8 +1362,9 @@
                      (eq (car exp) 3=reflect-closure)                                         ; 044
                      (memq (car exp) 3=simple-aliases))                                       ; 045
                  'function                                                                    ; 046
-                 (3-error '(not in normal form -- REF-TYPE/:) exp)))                          ; 047
-    (atom    (3-error '(not in normal form -- REF-TYPE/:) exp))))                             ; 048
+;;;;;; illegal terminating character after a colon: #\)
+                 (3-error '(not in normal form -- REF-TYPE) exp)))                            ; 047
+    (atom    (3-error '(not in normal form -- REF-TYPE) exp))))                               ; 048
                                                                                               ; 049
 ;;; 3-REF   Returns the referent of the argument, which must either be a                        050
 ;;; -----   handle or a rail of handles, since the only kinds of ref's we                       051
@@ -1239,7 +1374,7 @@
   (cond ((3-handle exp) (cdr exp))                                                            ; 055
         ((3-rail exp)                                                                         ; 056
          (do ((rail (3-strip exp) (3-strip rail))                                             ; 057
-              (elements nil (cons !(car rail) elements)))                                     ; 058
+              (elements nil (cons ↓(car rail) elements)))                                     ; 058
              ((null rail) (cons '~RAIL~ (nreverse elements)))                                 ; 059
            (if (not (3-handle (car rail)))                                                    ; 060
                (3-ref-type-error exp '|SEQUENCE OF S-EXPRESSIONS|))))                         ; 061
@@ -1272,9 +1407,9 @@
                                                                                               ; 016
 (defun 3-equal (e1 e2)                                                                        ; 017
   (and (eq (3-type e1) (3-type e2))                                                           ; 018
-       (caseq (3-type e1)                                                                     ; 019
-         (handle (let ((r1 (3-canonicalise !e1))                                              ; 020
-                       (r2 (3-canonicalise !e2)))                                             ; 021
+       (case (3-type e1)                                                                      ; 019
+         (handle (let ((r1 (3-canonicalise ↓e1))                                              ; 020
+                       (r2 (3-canonicalise ↓e2)))                                             ; 021
                    (or (eq r1 r2)                                                             ; 022
                        (and (3-rail r1)                                                       ; 023
                             (3-rail r2)                                                       ; 024
@@ -1319,32 +1454,27 @@
 ;;; ==========                                                                                  003
                                                                                               ; 004
 (defmacro loop-catch (tag &rest body)                                                         ; 005
-   `(do nil (nil) (*catch ,tag ,@body)))                                                      ; 006
+   `(do nil (nil) (catch ,tag ,@body)))                                                       ; 006
                                                                                               ; 007
 ;;; 3-LOGIN     Used only for obscure reasons on the LISP machine, having                       008
 ;;; 3-LOGOUT    to do with compatibility with other users, recovery from                        009
 ;;; --------    warm boots, and so forth.                                                       010
                                                                                               ; 011
 (defun 3-logout ()                                                                            ; 012
-  (setf (tv:io-buffer-input-function tv:kbd-io-buffer)                                        ; 013
-        nil)                                                                                  ; 014
-  (setq readtable S=readtable))                                                               ; 015
+  (setq *readtable* S=readtable))                                                             ; 015
                                                                                               ; 016
 (defun 3-login ()                                                                             ; 017
   (or (boundp '3=global-environment) (3-init))                                                ; 018
   (setq base 10. ibase 10. *nopoint t)                                                        ; 019
-  (setq readtable L=readtable))                                                               ; 020
+  (setq *readtable* L=readtable))                                                             ; 020
                                                                                               ; 021
 ;;; 3-LISP    Starts up the 3-LISP processor.  The 3-LEVEL-LOOP loop is                         022
 ;;; ------    only run on initialisation and errors; otherwise the                              023
 ;;;           READ-NORMALISE-PRINT loop is run out of ~C4~.                                     024
                                                                                               ; 025
 (defun 3-lisp ()                                                                              ; 026
-  (setf (tv:io-buffer-input-function tv:kbd-io-buffer)                                        ; 027
-        (let-closed ((3=process current-process))                                             ; 028
-          #'3-interrupt-handler))                                                             ; 029
   (or (boundp '3=global-environment) (3-init))                                                ; 030
-  (*catch '3-exit                                                                             ; 031
+  (catch '3-exit                                                                              ; 031
    (loop-catch '3-top-loop                                                                    ; 032
     (let ((3=in-use t))                                                                       ; 033
        (setq 3=level 0                                                                        ; 034
@@ -1366,101 +1496,13 @@
         3=a1 expr                                                                             ; 050
         3=a2 3=global-environment                                                             ; 051
         3=a3 `\(~~C5~ ~,3=a2 []))                                                             ; 052
-  (*catch '3-exit                                                                             ; 053
-     (loop-catch '3-main-loop (3-normalise 3=a1 3=a2 3=a3))))                                 ; 054
+  (catch '3-exit                                                                              ; 053
+    (loop-catch '3-main-loop (3-normalise 3=a1 3=a2 3=a3))))                                  ; 054
                                                                                               ; 055
                                                                                   ; Page 12   ; 001
 ;;; Errors and Interrupts:                                                                      002
 ;;; ======================                                                                      003
                                                                                               ; 004
-;;; 3-ERROR   General error handler.  MESSAGE is to be printed by MACLISP's                     005
-;;; -------   PRINC, whereas EXPR is printed by 3-PRINT.                                        006
-                                                                                              ; 007
-(defun 3-error (message &optional expr (label '|ERROR: |))                                    ; 008
-    (terpri)                                                                                  ; 009
-    (princ label)                                                                             ; 010
-    (if (atom message)                                                                        ; 011
-        (princ message)                                                                       ; 012
-        (mapc #'(lambda (el) (princ el) (princ '| |))                                         ; 013
-              message))                                                                       ; 014
-    (if expr (3-print expr))                                                                  ; 015
-    (break 3-bkpt 3=break-flag)                                                               ; 016
-    (if 3=in-use                                                                              ; 017
-        (*throw '3-level-loop nil)                                                            ; 018
-        (3-lisp)))                                                                            ; 019
-                                                                                              ; 020
-;;; 3-TYPE-ERROR                       3-ILLEGAL-CHAR                                           021
-;;; 3-INDEX-ERROR                      3-ILLEGAL-ATOM                                           022
-;;; 3-IMPLEMENTATION-ERROR             3-ILLEGAL-BOOLEAN                                        023
-;;; ----------------------             -----------------                                        024
-                                                                                              ; 025
-(defun 3-type-error (exp type)                                                                ; 026
-   (3-error `(expected a ,(implode `(,@(explodec type) #/,))                                  ; 027
-                       but found the ,(3-type exp))                                           ; 028
-             exp '|TYPE-ERROR: |))                                                            ; 029
-                                                                                              ; 030
-(defun 3-ref-type-error (exp type)                                                            ; 031
-  (3-error `(expected a ,(implode `(,@(explodec type) #/,))                                   ; 032
-                      but found the ,(3-ref-type exp))                                        ; 033
-           exp `|TYPE-ERROR: |))                                                              ; 034
-                                                                                              ; 035
-(defun 3-index-error (n rail)                                                                 ; 036
-  (3-error `(,n is out of range for) rail '|INDEX-ERROR: |))                                  ; 037
-                                                                                              ; 038
-(defun 3-implementation-error () (3-error '|Illegal implementation state!|))                  ; 039
-                                                                                              ; 040
-(defun 3-illegal-char (char)                                                                  ; 041
-   (3-error `(unexpected ,(implode `(|"| ,@(explodec char) |"|)))                             ; 042
-            nil '|NOTATION-ERROR: |))                                                         ; 043
-                                                                                              ; 044
-(defun 3-illegal-boolean (exp)                                                                ; 045
-   (3-error `(expected a boolean/, but found ,(implode `($ ,@(explodec exp))))                ; 046
-            nil '|NOTATION-ERROR: |))                                                         ; 047
-                                                                                              ; 048
-(defun 3-illegal-atom (atom)                                                                  ; 049
-   (3-error `(The atom ,atom is reserved in this implementation)                              ; 050
-            nil '|STRUCTURE-ERROR: |))                                                        ; 051
-                                                                                              ; 052
-;;; INTERRUPTS (this code is LISP machine specific):                                            053
-;;; ------------------------------------------------                                            054
-                                                                                              ; 055
-(defun 3-interrupt-handler (ignore character)                                                 ; 056
-  (values character                                                                           ; 057
-          (and tv:selected-window                                                             ; 058
-               (eq 3=process (funcall tv:selected-window ':PROCESS))                          ; 059
-               (boundp '3=in-use)                                                             ; 060
-               (selectq character                                                             ; 061
-                 (#↑B/G                                                                       ; 062
-                    (setq si:inhibit-scheduling-flag nil)                                     ; 063
-                    (process-run-temporary-function                                           ; 064
-                      "3=Main-Quit" 3=process ':INTERRUPT                                     ; 065
-                      #'(lambda () (3-quit-interrupt '3-top-loop)))                           ; 066
-                    T)                                                                        ; 067
-                 (#↑B/F                                                                       ; 068
-                    (setq si:inhibit-scheduling-flag nil)                                     ; 069
-                    (process-run-temporary-function                                           ; 070
-                      "3=Level-Quit" 3=process ':INTERRUPT                                    ; 071
-                      #'(lambda () (3-quit-interrupt '3-level-loop)))                         ; 072
-                    T)                                                                        ; 073
-                 (#↑B/E                                                                       ; 074
-                    (setq si:inhibit-scheduling-flag nil)                                     ; 075
-                    (process-run-temporary-function                                           ; 076
-                      "3=Flip" 3=process ':INTERRUPT                                          ; 077
-                      #'(lambda ()                                                            ; 078
-                          (if 3=in-use                                                        ; 079
-                              (progn (princ '|To LISP!|) (terpri)                             ; 080
-                                     (*throw '3-exit (ascii 0)))                              ; 081
-                              (progn (princ '|To 3-LISP!|)                                    ; 082
-                                     (3-lisp)))))                                             ; 083
-                    T)))))                                                                    ; 084
-                                                                                              ; 085
-(defun 3-quit-interrupt (tag)                                                                 ; 086
-    (if 3=in-use                                                                              ; 087
-        (progn (princ '| QUIT!|)                                                              ; 088
-               (terpri)                                                                       ; 089
-               (*throw tag nil))                                                              ; 090
-        (*throw 'sys:command-level nil)))                                                     ; 091
-                                                                                              ; 092
                                                                                               ; 093
                                                                                   ; Page 13   ; 001
 ;;; Initialisation:                                                                             002
@@ -1508,7 +1550,7 @@
                  ~,@(mapcar '3-make-primitive-closure                                         ; 044
                             (3-circular-closures))]))                                         ; 045
      (mapcar #'(lambda (entry)                                                                ; 046
-                 (3-rplacn 1 (cdr !(3r-2nd entry)) env))                                      ; 047
+                 (3-rplacn 1 (cdr ↓(3r-2nd entry)) env))                                      ; 047
              (cddr env))                                                                      ; 048
      (3-rplacn 2 (3r-1st env) ↑env)                                                           ; 049
      env))                                                                                    ; 050
@@ -1544,7 +1586,7 @@
      (+        \(lambda simple [a b] (+ a b)))                                                ; 080
      (-        \(lambda simple [a b] (- a b)))                                                ; 081
      (*        \(lambda simple [a b] (* a b)))                                                ; 082
-     (//       \(lambda simple [a b] (/ a b)))                                                ; 083
+     (/        \(lambda simple [a b] (/ a b)))                                                ; 083
      (referent \(lambda simple [exp env] (referent exp env)))                                 ; 084
      (simple   \(lambda simple [env pattern body] (simple env pattern body)))                 ; 085
      (reflect  \(lambda simple [env pattern body] (reflect env pattern body)))                ; 086
@@ -1579,15 +1621,15 @@
      (normalise proc env                                                                      ; 025
         (lambda simple [proc*]                                          ; C0                  ; 026
            (selectq (procedure-type proc*)                                                    ; 027
-               [reflect ((simple . !(cdr proc*)) args env cont)]                              ; 028
+               [reflect ((simple . ↓(cdr proc*)) args env cont)]                              ; 028
                [simple (normalise args env (make-c1 proc* cont))])))))                        ; 029
                                                                                               ; 030
 (define MAKE-C1                                                                               ; 031
   (lambda simple [proc* cont]                                                                 ; 032
      (lambda simple [args*]                                             ; C1                  ; 033
         (cond [(= proc* ↑referent)                                                            ; 034
-               (normalise !(1st args) !(2nd args) cont)]                                      ; 035
-              [(primitive proc*) (cont ↑(!proc* . !args*))]                                   ; 036
+               (normalise ↓(1st args) ↓(2nd args) cont)]                                      ; 035
+              [(primitive proc*) (cont ↑(↓proc* . ↓args*))]                                   ; 036
               [$T (normalise (body proc*)                                                     ; 037
                              (bind (pattern proc*) args* (env proc*))                         ; 038
                              cont)]))))                                                       ; 039
@@ -1628,7 +1670,7 @@
                                          '[[] env cont]                                       ; 022
                                          '(cont ↑env)))                                       ; 023
                                '[[type pattern body] env cont]                                ; 024
-                               '(cont ↑!(pcons type ↑[env pattern body])))]])                 ; 025
+                               '(cont ↑↓(pcons type ↑[env pattern body])))]])                 ; 025
                                                                                               ; 026
 ;;; Next tentative versions of SET, and a real version of Z (though we can't                    027
 ;;; use LET or BLOCK in defining Z, this definition is equivalent to the one                    028
@@ -1640,7 +1682,7 @@
 (rplact (length global)                                                                       ; 034
         ↑global                                                                               ; 035
         `[['&SET ,↑↑(lambda reflect [[var binding] env cont]                                  ; 036
-                       (cont (*rebind var ↑!binding env)))]                                   ; 037
+                       (cont (*rebind var ↑↓binding env)))]                                   ; 037
           ['Z, ↑↑(lambda simple [fun]                                                         ; 038
                     ((lambda simple [temp]                                                    ; 039
                         ((lambda simple [closure]                                             ; 040
@@ -1725,9 +1767,9 @@
            [(= var (1st (1st env))) (2nd (1st env))]                                          ; 119
            [$t (binding var (rest env))])))                                                   ; 120
                                                                                               ; 121
-(define ENV     (lambda simple [proc] !(1st (cdr proc))))                                     ; 122
-(define PATTERN (lambda simple [proc] !(2nd (cdr proc))))                                     ; 123
-(define BODY    (lambda simple [proc] !(3rd (cdr proc))))                                     ; 124
+(define ENV     (lambda simple [proc] ↓(1st (cdr proc))))                                     ; 122
+(define PATTERN (lambda simple [proc] ↓(2nd (cdr proc))))                                     ; 123
+(define BODY    (lambda simple [proc] ↓(3rd (cdr proc))))                                     ; 124
                                                                                               ; 125
 (define PROCEDURE-TYPE                                                                        ; 126
   (lambda simple [proc]                                                                       ; 127
@@ -1741,16 +1783,16 @@
                                                                                               ; 135
 (define BIND                                                                                  ; 136
   (lambda simple [pattern args env]                                                           ; 137
-     !(join ↑(match patten args) ↑env)))                                                      ; 138
+     ↓(join ↑(match patten args) ↑env)))                                                      ; 138
                                                                                               ; 139
 (define MATCH                                                                                 ; 140
   (lambda simple [pattern args]                                                               ; 141
      (cond [(atom pattern) [[pattern args]]]                                                  ; 142
-           [(handle args) (match pattern (map name !args))]                                   ; 143
+           [(handle args) (match pattern (map name ↓args))]                                   ; 143
            [(and (empty pattern) (empty args)) (scons)]                                       ; 144
            [(empty pattern) (error 'too-many-arguments)]                                      ; 145
            [(empty args) (error 'too-few-argunents)]                                          ; 146
-           [$T !(join ↑(match (1st pattern) (1st args))                                       ; 147
+           [$T ↓(join ↑(match (1st pattern) (1st args))                                       ; 147
                       ↑(match (rest pattern) (rest args)))])))                                ; 148
                                                                                               ; 149
 (define IF                                                                                    ; 150
@@ -1913,7 +1955,7 @@
                                                                                   ; Page 15:5 ; 307
 (define AND                                                                                   ; 308
   (lambda macro args                                                                          ; 309
-     (if (rail args) (and* args) `!(and* ↑,args))))                                           ; 310
+     (if (rail args) (and* args) `↓(and* ↑,args))))                                           ; 310
                                                                                               ; 311
 (define AND*                                                                                  ; 312
   (lambda simple [args]                                                                       ; 313
@@ -1923,7 +1965,7 @@
                                                                                               ; 317
 (define OR                                                                                    ; 318
   (lambda macro args                                                                          ; 319
-     (if (rail args) (or* args) `!(or* ↑,args))))                                             ; 320
+     (if (rail args) (or* args) `↓(or* ↑,args))))                                             ; 320
                                                                                               ; 321
 (define OR*                                                                                   ; 322
   (lambda simple [args]                                                                       ; 323
@@ -1972,7 +2014,7 @@
    (in-3-lisp \[                                                                              ; 366
                                                                                               ; 367
 (define REBIND                                                                                ; 368
-  (lambda simple [ver binding env]                                                            ; 369
+  (lambda simple [var binding env]                                                            ; 369
      (if (normal binding)                                                                     ; 370
          (rebind* var binding env)                                                            ; 371
          (error 'binding-is-not-in-normal-form))))                                            ; 372
