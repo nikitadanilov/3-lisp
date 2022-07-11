@@ -16,7 +16,8 @@
 ;; used instead of the "downarrow" symbol, because the latter is not in ASCII
 ;; (e.g., see p. 3, line 034 of the transcript), so presumably left and up
 ;; arrows *are* in ASCII. While "uparrow" can be identified with the caret ("^",
-;; U+005e), there is no obvious left arrow in modern ASCII.
+;; U+005e), there is no obvious left arrow in modern ASCII (historically the 
+;; underscore "_", U+005f sometimes was the left arrow).
 ;;
 ;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
 ;; "uparrow" and Unicode LEFTWARDS ARROW (U+2190) "←" for "leftarrow".
