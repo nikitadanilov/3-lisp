@@ -1564,10 +1564,10 @@
   (lambda simple [env]                                                                        ; 009
      (block (prompt (level))                                                                  ; 010
             (let [[normal-form (normalise (read) env id)]]                                    ; 011
-              (prompt level)                                                                  ; 012
-              (print normal-form)                                                             ; 013
-              (read-normalise-print env)))))                                                  ; 014
-                                                                                              ; 015
+              (prompt level)                                                                  ; 012 [sic. contradicts p. 1:3
+              (print normal-form)                                                             ; 013  line 231, leg. "(level)"
+              (read-normalise-print env)))))                                                  ; 014  also: LET body is a single
+                                                                                              ; 015  expression, wrap in BLOCK.]
 (define NORMALISE                                                                             ; 016
   (lambda simple [exp env cont]                                                               ; 017
      (cond [(normal exp) (cont exp)]                                                          ; 018
@@ -1718,7 +1718,7 @@
                rplacd rplacn rplact simple reflect ef name referent + * - /                   ; 111
                read print])))                                                                 ; 112
                                                                                               ; 113
-(define PROMPT (lambda simple [] (block (print ↑(level)) (print '>))))                        ; 114
+(define PROMPT (lambda simple [] (block (print ↑(level)) (print '>))))                        ; 114 [sic. leg. should take "level"]
                                                                                               ; 115
 (define BINDING                                                                               ; 116
   (lambda simple [var env]                                                                    ; 117
