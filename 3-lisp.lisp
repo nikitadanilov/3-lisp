@@ -127,7 +127,7 @@
 ;;;                                                                                             103
 ;;; NOTES:                                                                                      104
 ;;;                                                                                             105
-;;; 1. Case is ignores (converted to upper case on input)                                       106
+;;; 1. Case is ignored (converted to upper case on input)                                       106
 ;;; 2. Notational Sugar:                                                                        107
 ;;;                                                                                             108
 ;;;     "(<e1> <e2> ... <en>)" abbreviates "(<e1> . [<e2> ... <en>])"                           109
