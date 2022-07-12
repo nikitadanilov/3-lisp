@@ -139,7 +139,7 @@
 ;;;    a:  (  -- starts pairs                h:  .  -- in "[ ... ]" for JOIN                    115
 ;;;    b:  )  -- ends pairs                  i:  ↑  -- NAME                                     116
 ;;;    c:  .  -- in "( ... )" for CDR        j:  !  -- REFERENT                                 117
-;;;    d:  [  -- starts rails               (k:  :  -- DYNAMIC)                                 118
+;;;    d:  [  -- starts rails               (k:  :  -- DYNAMIC)                                 118 [DYNAMIC is not present]
 ;;;    e:  ]  -- ends rails                  l:  `  -- Backquote a la MACLISP                   119 [sic. capitalisation]
 ;;;    f:  '  -- starts handles              m:  ,  --    "      "  "    "                      120
 ;;;    g:  ;  -- starts comments (to CRLF)   n:  ~  -- Switch to MACLISP                        121
@@ -260,7 +260,7 @@
 ;;; level (infinitely high up) is invoked by someone (say, God, or some                         236
 ;;; functional equivalent) normalising the expression (READ-NORMALISE-PRINT                     237
 ;;; GLOBAL).  When it reads an expression, it is given the input string                         238
-;;; "(READ-NORMALISE-PRINT GLOBAL"), which causes the level below it to read                    239
+;;; "(READ-NORMALISE-PRINT GLOBAL)", which causes the level below it to read                    239
 ;;; an expression, which is in turn given "(READ-NORMALISE-PRINT GLOBAL)",                      240
 ;;; and so forth, until finally the second reflective level is given                            241
 ;;; "(READ-NORMALISE-PRINT GLOBAL)". This types "1>" on the console,                            242
@@ -289,7 +289,7 @@
 ;;;     3-LISP Structural Type:    MACLISP implementation:                                      265
 ;;;                                                                                             266
 ;;;     1. Numerals             -- Numerals                                                     267
-;;;     2. Booleans             -- The atoms $T and $f                                          268
+;;;     2. Booleans             -- The atoms $T and $F                                          268
 ;;;     3. Pairs                -- Pairs                                                        269
 ;;;     4. Rails                -- (~RAIL~ <e1> ... <en>)  (but see note 9)                     270
 ;;;     5. Handles              -- (~QUOTE~ . <exp>)                                            271
@@ -1171,7 +1171,7 @@
    (do ((i 0 (1+ i))                                                                          ; 094
         (last r1 rail)                                                                        ; 095
         (rail (3-strip* r1) (3-strip* (cdr rail))))                                           ; 096
-       ((or (= n 1) (null (cdr rail)))                                                        ; 097
+       ((or (= n i) (null (cdr rail)))                                                        ; 097
         (progn                                                                                ; 098
          (if (not (= n i)) (3-index-error n r1))                                              ; 099
          (if (let ((r2-headers (do ((r2 r2 (cdr r2))                                          ; 100

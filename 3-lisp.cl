@@ -16,7 +16,8 @@
 ;; used instead of the "downarrow" symbol, because the latter is not in ASCII
 ;; (e.g., see p. 3, line 034 of the transcript), so presumably left and up
 ;; arrows *are* in ASCII. While "uparrow" can be identified with the caret ("^",
-;; U+005e), there is no obvious left arrow in modern ASCII.
+;; U+005e), there is no obvious left arrow in modern ASCII (historically the 
+;; underscore "_", U+005f sometimes was the left arrow).
 ;;
 ;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
 ;; "uparrow" and Unicode LEFTWARDS ARROW (U+2190) "←" for "leftarrow".
@@ -139,7 +140,7 @@
 ;;;    a:  (  -- starts pairs                h:  .  -- in "[ ... ]" for JOIN                    115
 ;;;    b:  )  -- ends pairs                  i:  ↑  -- NAME                                     116
 ;;;    c:  .  -- in "( ... )" for CDR        j:  ↓  -- REFERENT                                 117
-;;;    d:  [  -- starts rails               (k:  :  -- DYNAMIC)                                 118
+;;;    d:  [  -- starts rails               (k:  :  -- DYNAMIC)                                 118 [DYNAMIC is not present]
 ;;;    e:  ]  -- ends rails                  l:  `  -- Backquote a la MACLISP                   119 [sic. capitalisation]
 ;;;    f:  '  -- starts handles              m:  ,  --    "      "  "    "                      120
 ;;;    g:  ;  -- starts comments (to CRLF)   n:  ~  -- Switch to MACLISP                        121
@@ -1312,7 +1313,7 @@
    (do ((i 0 (1+ i))                                                                          ; 094
         (last r1 rail)                                                                        ; 095
         (rail (3-strip* r1) (3-strip* (cdr rail))))                                           ; 096
-       ((or (= n 1) (null (cdr rail)))                                                        ; 097
+       ((or (= n i) (null (cdr rail)))                                                        ; 097
         (progn                                                                                ; 098
          (if (not (= n i)) (3-index-error n r1))                                              ; 099
          (if (let ((r2-headers (do ((r2 r2 (cdr r2))                                          ; 100
