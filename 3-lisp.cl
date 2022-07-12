@@ -843,16 +843,16 @@
 
 ;;;;;; AND is a macro in Common Lisp and cannot be applied. (Huh?)
 
-(defun aand (&rest args)
+(defun and* (&rest args)
   (cond ((null args) t)
-	((car args) (apply #'aand (cdr args)))
+	((car args) (apply #'and* (cdr args)))
 	(nil)))
 
 (defun 3-expand-rail (rail f)                                                                 ; 157
    (do ((rail (3-strip rail) (3-strip rail))                                                  ; 158
         (elements nil (cons (3-expand (car rail) t) elements)))                               ; 159
        ((null rail)                                                                           ; 160
-        (if (and f (apply 'aand (mapcar '3-handle elements)))                                 ; 161
+        (if (and f (apply 'and* (mapcar '3-handle elements)))                                 ; 161
             ↑(cons '~RAIL~ (mapcar 'cdr (nreverse elements)))                                 ; 162
             `(RCONS ~RAIL~ ,@(nreverse elements))))))                                         ; 163
                                                                                               ; 164
@@ -988,7 +988,7 @@
 	                                                                          ; Page 4:1  ; [sic. no line number]
           (=        (if (3-equal (3r-1st args) (3r-2nd args)) '$T '$F))                       ; 069
           (read     ↑(3-read))                                                                ; 070
-          (print    (3-print ↓(3r-1st args)) (princ '/ ) '$T)                                 ; 071
+          (print    (3-print ↓(3r-1st args)) (princ #\ ) '$T)                                 ; 071
           (terpri   (terpri) '$T)                                                             ; 072
           (+        (+ (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 073
           (*        (* (3-num-check (3r-1st args)) (3-num-check (3r-2nd args))))              ; 074
@@ -1153,6 +1153,7 @@
 ;;;          MACLISP rail designator, NREVERSEd on exit.                                        018
                                                                                               ; 019
 (defun 3-bind* (pattern vals)                                                                 ; 020
+  (setq p0 pattern v0 vals)
   (case (3-type pattern)                                                                      ; 021
     (atom `(\[~,↑pattern ~,↑vals]))                                                           ; 022
     (rail (case (3-type vals)                                                                 ; 023
@@ -1173,7 +1174,7 @@
                             (cond ((and (null pattern) (null vals))                           ; 038
                                    (nreverse binds))                                          ; 039
                                   ((null vals) (3-error '|Too few arguments supplied|))       ; 040
-                                  (t (3-error '|Too many arguments supplied|)))))             ; 041
+                                  (t (print p0) (print v0) (3-error '|Too many arguments supplied|)))))             ; 041
                        (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to handle|)))      ; 042
            (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to rail|))))                ; 043
     (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                               ; 044
@@ -1605,9 +1606,9 @@
   (lambda simple [env]                                                                        ; 009
      (block (prompt (level))                                                                  ; 010
             (let [[normal-form (normalise (read) env id)]]                                    ; 011
-              (prompt level)                                                                  ; 012
-              (print normal-form)                                                             ; 013
-              (read-normalise-print env)))))                                                  ; 014
+              (block (prompt (level))                                                         ; 012
+                     (print normal-form)                                                      ; 013
+                     (read-normalise-print env))))))                                          ; 014
                                                                                               ; 015
 (define NORMALISE                                                                             ; 016
   (lambda simple [exp env cont]                                                               ; 017
@@ -1759,7 +1760,7 @@
                rplacd rplacn rplact simple reflect ef name referent + * - /                   ; 111
                read print])))                                                                 ; 112
                                                                                               ; 113
-(define PROMPT (lambda simple [] (block (print ↑(level)) (print '>))))                        ; 114
+(define PROMPT (lambda simple [level] (block (print ↑level) (print '>))))                     ; 114
                                                                                               ; 115
 (define BINDING                                                                               ; 116
   (lambda simple [var env]                                                                    ; 117
