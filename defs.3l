@@ -1,0 +1,32 @@
+(define test1 (lambda reflect [args env cont] (return args)))              ; (s5-66)
+(define test2 (lambda reflect [args env cont] (return env)))               ; (s5-67)
+(define quit  (lambda reflect ? 'quit!))                                   ; (s5-78)
+(define return (lambda reflect [[exp] env cont] (normalise exp env id)))   ; (s5-80)
+(define up     (lambda reflect [[arg] env cont]                            ; (s6-137)
+		       (normalise arg env
+				  (lambda simple [arg!]
+				    (if (= ↓arg! 1)
+					(return 'ok)
+					(up (- ↓arg! 1)))))))
+(define catch1 (lambda reflect [[arg] env cont]                            ; (s5-84)
+		       (cont (normalise arg env id))))
+(define throw1 (lambda reflect [[arg] env cont] (normalise arg env id)))   ; (s5-84)
+(define unwind-protect (lambda reflect [[form1] [form2] env cont]          ; (s5-85)
+			       (cont (block1 (normalise form1 env id)
+					     (normalise form2 env id)))))
+(define block1 (lambda simple args (1st args)))                            ; (s5-86)
+(define catch2 (lambda reflect [[tag form] env cont]                       ; (s5-91)
+		       (let [[answer (normalise form env
+						(lambda simple x x))]]
+			 (if (and (sequence answer) (= (length answer) 2))
+			     (if (= (1st answer) tag)
+				 (cont (2nd answer))
+				 answer)
+			     (cont . answer)))))
+(define throw2 (lambda reflect [[tag exp] env cont]                        ; (s5-91)
+		       (normalise exp env
+				  (lambda simple [exp!] [tag exp!]))))
+(define debug (lambda reflect [[message] env cont]                         ; (s5-166)
+		      (block (terpri)
+			(print message)
+			(cont (read-normalise-print env)))))
