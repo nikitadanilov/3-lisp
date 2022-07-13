@@ -678,17 +678,20 @@
   (declare (ignore stream))
   (intern (string char)))
 
+(defun read* (s)
+  (read-preserving-whitespace s))
+
 ;;;;;; set-macro-character second argument takes (stream character).
 
 (let ((*readtable* L=readtable))                                                              ; 058
    (set-macro-character #\\ #'(lambda (s c) (3-read s)))                                      ; 059
-   (set-macro-character #\↑ #'(lambda (s c) `(cons '~QUOTE~ ,(read s))))                      ; 060
-   (set-macro-character #\↓ #'(lambda (s c) `(3-ref ,(read s))))                              ; 061
+   (set-macro-character #\↑ #'(lambda (s c) `(cons '~QUOTE~ ,(read* s))))                     ; 060
+   (set-macro-character #\↓ #'(lambda (s c) `(3-ref ,(read* s))))                             ; 061
    (set-macro-character #\] #'single-macro-character))        ; So "~FOO]" will work.         ; 062
                                                                                   ; Page 3:1  ; [sic. no line number]
                                                                                               ; 063
 (let ((*readtable* 3=readtable))                                                              ; 064
-   (set-macro-character #\~ #'(lambda (s c) (let ((*readtable* L=readtable)) (read s))))      ; 065
+   (set-macro-character #\~ #'(lambda (s c) (let ((*readtable* L=readtable)) (read* s))))     ; 065
    (set-macro-character #\↓ #'(lambda (s c) `(referent ~RAIL~ ,(3-read* s)                    ; 066
                                                          (current-env ~RAIL~))))              ; 067
    (set-macro-character #\↑ #'(lambda (s c) `(name ~RAIL~ ,(3-read* s))))                     ; 068
@@ -762,7 +765,7 @@
    (let ((*readtable* 3=readtable)) (3-read* stream)))                                        ; 085
                                                                                               ; 086
 (defun 3-read* (stream &optional OK)                                                          ; 087
-   (let ((token (read stream)))                                                               ; 088
+   (let ((token (read* stream)))                                                              ; 088
       (cond ((memq token OK) token)                                                           ; 089
             ((memq token '(|)| |.| |]|)) (3-illegal-char token))                              ; 090
             ((or (memq token '(~RAIL~ ~QUOTE~ NIL))                                           ; 091
@@ -781,7 +784,7 @@
          (b (3-read* stream '(|.| |)|))))                                                     ; 104
       (if (eq b '|.|)                                                                         ; 105
           (prog1 (cons a (3-read* stream))                                                    ; 106
-                 (setq b (read stream))                                                       ; 107
+                 (setq b (read* stream))                                                      ; 107
                  (if (not (eq b '|)|)) (3-illegal-char b)))                                   ; 108
           (do ((b b (3-read* stream '(|)|)))                                                  ; 109
                (c nil (cons b c)))                                                            ; 110
@@ -813,12 +816,12 @@
                                                                                               ; 126
 (defun 3-backq-macro (stream)                                                                 ; 127
    (let ((3=backquote-depth (1+ 3=backquote-depth)))                                          ; 128
-      (macroexpand (list '~3-BACKQUOTE (read stream)))))                                      ; 129
+      (macroexpand (list '~3-BACKQUOTE (read* stream)))))                                     ; 129
                                                                                               ; 130
 (defun 3-comma-macro (stream)                                                                 ; 131
    (if (< 3=backquote-depth 1) (3-error '|Unscoped comma|))                                   ; 132
    (let ((3=backquote-depth (1- 3=backquote-depth)))                                          ; 133
-      (cons '~3-COMMA (read stream))))                                                        ; 134
+      (cons '~3-COMMA (read* stream))))                                                       ; 134
                                                                                               ; 135
 ;;; The second argument to the next 3 procedures is a flag: NIL if the                          136
 ;;; backquote was at this level; T is not (implying that coalescing can                         137
@@ -900,8 +903,8 @@
             (if flag (princ '| |))                                                            ; 203
             (3-print (car list)))))                                                           ; 204
                                                                                               ; 205
-(defun 3-prompt (level)                                                                       ; 206
-   (format t "~%~D> " level)                                                                  ; 207
+(defun 3-prompt (level &optional (char ">"))                                                  ; 206
+  (format t "~%~D~A " level char)                                                             ; 207
    (finish-output))
                                                                                               ; 210
 (defun 3-circular-closure-p (exp)                                                             ; 211
@@ -1114,7 +1117,7 @@
 ;;; designator of the result of the NORMALISE at the level below.                               112
                                                                                               ; 113
 (defun ~C4~ (env cont normal-form)                                                            ; 114
-   (3-prompt 3=level)                                                                         ; 115
+   (3-prompt 3=level ":")                                                                     ; 115
    (3-print ↓normal-form)                                                                     ; 116
    (3-prompt 3=level)                                                                         ; 117
    (3-drop-level 3=global-environment cont)                                                   ; 118
@@ -1154,7 +1157,6 @@
 ;;;          MACLISP rail designator, NREVERSEd on exit.                                        018
                                                                                               ; 019
 (defun 3-bind* (pattern vals)                                                                 ; 020
-  (setq p0 pattern v0 vals)
   (case (3-type pattern)                                                                      ; 021
     (atom `(\[~,↑pattern ~,↑vals]))                                                           ; 022
     (rail (case (3-type vals)                                                                 ; 023
@@ -1175,7 +1177,7 @@
                             (cond ((and (null pattern) (null vals))                           ; 038
                                    (nreverse binds))                                          ; 039
                                   ((null vals) (3-error '|Too few arguments supplied|))       ; 040
-                                  (t (print p0) (print v0) (3-error '|Too many arguments supplied|)))))             ; 041
+                                  (t (3-error '|Too many arguments supplied|)))))             ; 041
                        (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to handle|)))      ; 042
            (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR to rail|))))                ; 043
     (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                               ; 044
