@@ -1468,7 +1468,7 @@
 ;;; ===============                                                                             003
                                                                                               ; 004
 (defun 3-init ()                                                                              ; 005
- (princ '|   (initialising 3-LISP reflective model -- this take a few minutes)|)              ; 006
+ (princ '|   (initialising 3-LISP reflective model -- this takes a few minutes)|)             ; 006
  (setq                                                                                        ; 007
    3=in-use nil                                                                               ; 008
    3=level 1                                                                                  ; 009
@@ -1622,7 +1622,7 @@
                                                                                               ; 015
 (rplact (length global)                                                                       ; 016
         ↑global                                                                               ; 017
-        `[['CURRENT-ENV, ↑↑(reflect [['name ↑name]]                                           ; 018
+        `[['CURRENT-ENV ,↑↑(reflect [['name ↑name]]                                           ; 018
                                     '[[] env cont]                                            ; 019
                                     '(cont ↑env))]                                            ; 020
           ['LAMBDA ,↑↑(reflect ((reflect [['name ↑name]]                                      ; 021
@@ -1973,7 +1973,7 @@
    (in-3-lisp \[                                                                              ; 366
                                                                                               ; 367
 (define REBIND                                                                                ; 368
-  (lambda simple [ver binding env]                                                            ; 369
+  (lambda simple [var binding env]                                                            ; 369
      (if (normal binding)                                                                     ; 370
          (rebind* var binding env)                                                            ; 371
          (error 'binding-is-not-in-normal-form))))                                            ; 372
