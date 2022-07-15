@@ -1,27 +1,117 @@
 ;; -*- common-lisp -*-
 
+;; Load this with:
+;;     (load "3-lisp.cl" :external-format :utf-8)         ; LispWorks
+;;     (load "3-lisp.cl" :external-format 'charset:utf-8) ; clisp
+;;     (load "3-lisp.cl")                                 ; sbcl
+;; so much for portability.
+
+;; This is port of 3-lisp.lisp from CADR-machine LISP (mostly Maclisp) to a
+;; modern Common Lisp.
+
+;; Porting notes.
+;;
+;; This 40-years old code required surprisingly few changes.
+;;
+;; Where a difference between Maclisp and Common Lisp is basically a rename,
+;; this rename was done directly in the sources. Specifically:
+;;
+;;     Maclisp/CADR  Common Lisp
+;;
+;;     CASEQ         CASE
+;;     *CATCH        CATCH
+;;     *THROW        THROW
+;;     READCH        READ-CHAR
+;;     /             \                       (as escape)
+;;     DECLARE       PROCLAIM                (at the top level)
+;;     COMPILE       :COMPILE-TOPLEVEL       (eval-when keywords, see http://clhs.lisp.se/Body/s_eval_w.htm
+;;     LOAD          :LOAD-TOPLEVEL           "The use of eval, compile, and load is deprecated.")
+;;     EVAL          :EXECUTE
+;;     READTABLE     *READTABLE*
+;;     LOGIN-SETQ    SETQ                    (https://hanshuebner.github.io/lmman/fd-hac.xml)
+;;     IGNORE FOO    (DECLARE (IGNORE FOO))
+;;
+
+;;
+;; Some missing Maclisp functions were added: MEMQ, FIXP
+;;
+;; AND is a macro in Common Lisp and cannot be applied. (So much for orthogonality.) See AND*.
+;;
+;; Some functions changed signatures:
+;;
+;;     TYPEP       Takes 2 parameters and returns Boolean in Common Lisp
+;;     BREAK       Takes some additional arguments in Maclisp-CADR
+;;     IF          Like Elisp, Maclisp allows multiple forms in the ELSE part
+;;
+;; 3-NORMALISE* assumes that Common Lisp implementations are tail-recursive, compare 3-lisp.lisp.
+;;
+;; *LEXPR is not needed:
+;;
+;;      *lexpr Special Form
+;;
+;;      (*lexpr sym1 sym2 ... ) declares sym1, sym2, etc. to
+;;      be names of functions. In addition it prevents these functions from
+;;      appearing in the list of functions referenced but not defined printed at
+;;      the end of the compilation.
+;;
+;;                      http://www.bitsavers.org/pdf/mit/cadr/chinual_3rdEd_Mar81.pdf
+
+;;
+;; Old Lisps had no string type and used symbols for string manipulations. This
+;; weirdly-looking code was preserved to honour human ingenuity, see IMPLODE and
+;; EXPLODEC.
+;;
+;; (https://www.cs.cmu.edu/Groups/AI/html/faqs/lang/lisp/part2/faq-doc-3.html).
+;;
+
+;;
+;; 3-lisp re-uses built-in lisp reader to parse 3-lisp input and 3-lisp code
+;; that is part of the 3-lisp implementation. There were some (but again, less
+;; than one would expect for such a sensitive part of the language) changes in
+;; this area:
+;;
+;;     READ-PRESERVING-WHITESPACE is used instead of read in a few places to
+;;     avoid eating newlines, see READ*.
+;;
+;;     SET-SYNTAX-MACRO-CHAR  ->  SET-MACRO-CHARACTER.
+;;
+;;     reader macro function (second argument to SET-MACRO-CHARACTER) takes
+;;     stream and character.
+;;
+;;     There is no SET-SYNTAX-FROM-DESCRIPTION in common lisp and there are no
+;;     "self-delimiting single-character" symbols (see
+;;     http://www.bitsavers.org/pdf/mit/cadr/chinual_5thEd_Jan83/chinualJan83_21_IOsystem.pdf,
+;;     p. 381, see CLTL 22.1.1 (p. 554)), SINGLE-MACRO-CHARACTER.
+;;
+;;     Mysteriously, the parser table for this file (L=READTABLE) refers to the
+;;     functions defined later in the file (i.e., not yet parsed at the time
+;;     when the table is installed). This presumably implies some form of
+;;     multi-pass parsing that modern implementations lack and was fixed by
+;;     re-ordering the definitions.
+;;
+;;     Maclisp maintains backquote context across recursive parser
+;;     invocations. For example in the expression (which happens within defun
+;;     3-EXPAND-PAIR)
+;;
+;;         `\(PCONS ~,a ~,d)
+;;
+;;     the backquote is consumed by the top-level activation of READ. Backslash
+;;     forces the switch to 3-lisp readtable and call to 3-READ to handle the
+;;     rest of the expression. Within this 3-READ activation, the tilde forces
+;;     switch back to L=READTABLE and call to READ to handle ",a". In Maclisp,
+;;     this second READ activation re-uses the backquote context established by
+;;     the top-level READ activation. Of all Common Lisp implementations that I
+;;     tried, only sbcl correctly handles this situation. Lisp Works and clisp
+;;     complain about "comma outside of backquote". In clisp,
+;;     clisp-2.49/src/io.d:read_top() explicitly binds BACKQUOTE-LEVEL to nil.
+;;
+;; In addition to UPWARDS ARROW "↑" and LEFTWARDS ARROW "←" used by 3-lisp.lisp,
+;; this file uses DOWNWARDS ARROW "↓" instead of "!". Because progress.
+
+
 ;; 3-lisp implementation from Procedural Reflection in Programming Languages,
 ;; volume i., Brian Cantwell Smith, February 1982, Appendix, pp. 708--751.
 ;; http://publications.csail.mit.edu/lcs/pubs/pdf/MIT-LCS-TR-272.pdf
-
-;; This file is intended to be as faithful transcription as possible.
-;; Pagination and line numbers are preserved as are all the inconsistencies in
-;; the spelling and punctuation (mentioned in the brackets at the right margin).
-;;
-;; Notation
-;; --------
-;;
-;; The text uses fairly Spartan character set, with the exception of left and up
-;; arrow symbols. Curiously, it is explicitly stated a few times that "!" is
-;; used instead of the "downarrow" symbol, because the latter is not in ASCII
-;; (e.g., see p. 3, line 034 of the transcript), so presumably left and up
-;; arrows *are* in ASCII. While "uparrow" can be identified with the caret ("^",
-;; U+005e), there is no obvious left arrow in modern ASCII (historically the 
-;; underscore "_", U+005f sometimes was the left arrow).
-;;
-;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
-;; "uparrow" and Unicode LEFTWARDS ARROW (U+2190) "←" for "leftarrow".
-;; 2193	 ↓ 	DOWNWARDS ARROW
 
 ;;; -*- Mode:LISP; Package:User; Base: 10. -*-                                      Page 1      001
 ;;;                                                                                             002
@@ -261,7 +351,7 @@
 ;;; level (infinitely high up) is invoked by someone (say, God, or some                         236
 ;;; functional equivalent) normalising the expression (READ-NORMALISE-PRINT                     237
 ;;; GLOBAL).  When it reads an expression, it is given the input string                         238
-;;; "(READ-NORMALISE-PRINT GLOBAL"), which causes the level below it to read                    239
+;;; "(READ-NORMALISE-PRINT GLOBAL)", which causes the level below it to read                    239
 ;;; an expression, which is in turn given "(READ-NORMALISE-PRINT GLOBAL)",                      240
 ;;; and so forth, until finally the second reflective level is given                            241
 ;;; "(READ-NORMALISE-PRINT GLOBAL)". This types "1>" on the console,                            242
@@ -290,7 +380,7 @@
 ;;;     3-LISP Structural Type:    MACLISP implementation:                                      265
 ;;;                                                                                             266
 ;;;     1. Numerals             -- Numerals                                                     267
-;;;     2. Booleans             -- The atoms $T and $f                                          268
+;;;     2. Booleans             -- The atoms $T and $F                                          268
 ;;;     3. Pairs                -- Pairs                                                        269
 ;;;     4. Rails                -- (~RAIL~ <e1> ... <en>)  (but see note 9)                     270
 ;;;     5. Handles              -- (~QUOTE~ . <exp>)                                            271
@@ -468,20 +558,12 @@
 ;;; 2. Strings (all normal-form string designators, perhaps called "STRINGERS")                 446
 ;;;    could be added.                                                                          447
                                                                                               ; 448
+#+sbcl (declaim (sb-ext:muffle-conditions style-warning))
 
 ;;;                                                                                 Page 2      001
 ;;; Declaration and Macros:                                                                     002
 ;;; =======================                                                                     003
                                                                                               ; 004
-;;;;;; Common Lisp compatibility.
-;;;;;; caseq -> case
-;;;;;; *catch -> catch
-;;;;;; *throw -> throw
-;;;;;; readch -> read-char
-;;;;;; / -> \ as escape
-
-;;;;;; Common Lisp compatibility.
-
 (proclaim                                                                                     ; 005
   '(special                                                                                   ; 006
     3=simple-aliases 3=global-environment 3=states 3=level 3=break-flag                       ; 007
@@ -490,25 +572,13 @@
     3=id-closure 3=backquote-depth))                                                          ; 010
 ;(proclaim '(ignore 3=process))
 
-;;;;;; http://www.bitsavers.org/pdf/mit/cadr/chinual_3rdEd_Mar81.pdf
-;;;;;;
-;;;;;; *lexpr Special Form
-;;;;;;        (*lexpr syml sym2 ... ) declares syml, sym2, etc. to
-;;;;;; be names of functions. In addition it prevents these functions from
-;;;;;; appearing in the list of functions referenced but not defined printed at
-;;;;;; the end of the compilation.
-;(proclaim '(type function 3-read                                                             ; 011
-;		 function 3-read*
-;		 function 3-error))
-
 ;;; (herald 3-LISP)                                                                             013
                                                                                               ; 014
-
-;;;;;; Common Lisp has no memq.
+(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 015
+                                                                                              ; 016
+;; Common Lisp portability
 (defun memq (x y) (member x y :test #'eq))
 
-;;;;;; Maclisp explodec and implode.
-;;;;;; https://www.cs.cmu.edu/Groups/AI/html/faqs/lang/lisp/part2/faq-doc-3.html
 (defun explodec (object)
   (loop for char across (prin1-to-string object)
         collect (intern (string char))))
@@ -516,20 +586,13 @@
 (defun implode (list)
   (read-from-string (coerce (mapcar #'character list) 'string)))
 
-;;;;;; SBCL https://stackoverflow.com/questions/23624570/sbcl-forward-declaration-possible
-#+sbcl (declaim (sb-ext:muffle-conditions style-warning))
+(defun fixp (x) (integerp x))
 
-;;;;;; Common Lisp compatibility.
-;;;;;; http://clhs.lisp.se/Body/s_eval_w.htm
-;;;;;; "The use of eval, compile, and load is deprecated."
-;;;;;;
-;;;;;; compile -> :compile-toplevel
-;;;;;; load    -> :load-toplevel
-;;;;;; eval    -> :execute
+(defun and* (&rest args)
+  (cond ((null args) t)
+	((car args) (apply #'and* (cdr args)))
+	(nil)))
 
-(eval-when (:load-toplevel :execute :compile-toplevel)                                        ; 015
-                                                                                              ; 016
-;;;;;; Common Lisp: typep takes 2 arguments.
 (defmacro list? (x) `(typep ,x 'list))                                                        ; 017
 (defmacro 1st (l) `(car ,l))                                                                  ; 018
 (defmacro 2nd (l) `(cadr ,l))                                                                 ; 019
@@ -539,9 +602,6 @@
                                                                                               ; 023
 (defmacro 3-primitive-simple-id (proc) `(cadr (3r-3rd (cdr ,proc))))                          ; 024
                                                                                               ; 025
-;;;;;; No fixp in Common Lisp
-(defun fixp (x) (integerp x))
-
 (defmacro 3-numeral (e) `(fixp ,e))                                                           ; 026
 (defmacro 3-boolean (e) `(member ,e '($T $F)))                                     ; 027
                                                                                               ; 028
@@ -562,7 +622,6 @@
 ;;; ------------   simply call 3-NORMALISE.  Sets up the loop variables                         043
 ;;;                and jumps to the top of the driving loop.                                    044
                                                                                               ; 045
-;;;;;; Common Lisp: tail recursive.
 (defun 3-normalise* (exp env cont)                                                            ; 046
    (3-normalise exp env cont))
                                                                                               ; 049
@@ -648,9 +707,6 @@
 ;;; Five constants needed to be defined for 3-LISP structures to be read in:                    045
                                                                                               ; 046
 
-;;;;;; Common Lisp compatibility.
-;;;;;; readtable -> *readtable*
-
 (setq S=readtable *readtable*                     ; Save the system readtable                 ; 047
       L=readtable (copy-readtable)                ; and name two special ones:                ; 048
       3=readtable (copy-readtable)                ; one for LISP, one for 3-LISP.             ; 049
@@ -660,28 +716,14 @@
 ;;; The following has been modified from the original MACLISP to enable it to                   053
 ;;; operate under the I/O protocols of the MIT LISP machine:                                    054
                                                                                               ; 055
-;;;;;; Common Lisp compatibility.
-;;;;;; login-setq -> setq
-
 (setq *readtable* L=readtable)                    ; Needed in order to read this file.        ; 056
                                                                                               ; 057
-;;;;;; Common Lisp compatibility.
-
-;;;;;; There is no (set-syntax-from-description) in common lisp and there is no
-;;;;;; "self-delimiting single-character" symbols (see
-;;;;;; http://www.bitsavers.org/pdf/mit/cadr/chinual_5thEd_Jan83/chinualJan83_21_IOsystem.pdf,
-;;;;;; p. 381).
-;;;;;;
-;;;;;; See CLTL 22.1.1 (p. 554).
-
 (defun single-macro-character (stream char)
   (declare (ignore stream))
   (intern (string char)))
 
 (defun read* (s)
   (read-preserving-whitespace s))
-
-;;;;;; set-macro-character second argument takes (stream character).
 
 (let ((*readtable* L=readtable))                                                              ; 058
    (set-macro-character #\\ #'(lambda (s c) (3-read s)))                                      ; 059
@@ -717,7 +759,6 @@
         (mapc #'(lambda (el) (princ el) (princ '| |))                                         ; 013
               message))                                                                       ; 014
     (if expr (3-print expr))                                                                  ; 015
-;;;;;; Common Lisp: different break. What is 3-bkpt?
     (break)                                                                                   ; 016
     (if 3=in-use                                                                              ; 017
         (throw '3-level-loop nil)                                                             ; 018
@@ -844,14 +885,6 @@
                    `\(PCONS ~,a ~,d))))))       ; else use MACLISP's backquote                ; 154
                                                 ; to form a call to PCONS.                    ; 155
                                                                                               ; 156
-
-;;;;;; AND is a macro in Common Lisp and cannot be applied. (Huh?)
-
-(defun and* (&rest args)
-  (cond ((null args) t)
-	((car args) (apply #'and* (cdr args)))
-	(nil)))
-
 (defun 3-expand-rail (rail f)                                                                 ; 157
    (do ((rail (3-strip rail) (3-strip rail))                                                  ; 158
         (elements nil (cons (3-expand (car rail) t) elements)))                               ; 159
@@ -886,7 +919,6 @@
                                 (progn (princ '| <circular-env>|)                             ; 187
                                        (3-print-elements (cddr exp) 't))                      ; 188
                                 (3-print-elements (cdr exp) 't))                              ; 189
-;;;;;; ELSE is 1-form in Common Lisp IF.
                             (progn (princ '| . |) (3-print (cdr exp))))                       ; 190
                         (princ '|)|))))                                                       ; 191
       (rail    (princ '|[|)                                                                   ; 192
@@ -1186,7 +1218,6 @@
    (3-atom-check var)                                                                         ; 047
    (3-rail-check env)                                                                         ; 048
    (if (not (3-normal binding))                                                               ; 049
-;;;;;; illegal terminating character after a colon: #\)
        (3-error '(binding not in normal form -- REBIND) binding))                             ; 050
    (do ((env (3-strip* env) (3-strip* (cdr env))))                                            ; 051
        ((null (cdr env)) (nconc env `\[[~,↑var ~,binding]]))                                  ; 052
@@ -1331,11 +1362,6 @@
 ;;; Typing and Type Checking:                                                                   002
 ;;; =========================                                                                   003
                                                                                               ; 004
-(eval-when (:load-toplevel :execute :compile-toplevel) ; Backquote needs this                 ; 005
-                                                                                              ; 006
-                                                                                              ; 014
-)                                               ; end of eval-when                            ; 015
-                                                                                              ; 016
 ;;; 3-boolean and 3-numeral are macros, defined above.                                          017
                                                                                               ; 018
 (defun 3-atom (e) (and (symbolp e) (not (memq e '($T $F)))))                                  ; 019
@@ -1366,7 +1392,6 @@
                      (eq (car exp) 3=reflect-closure)                                         ; 044
                      (memq (car exp) 3=simple-aliases))                                       ; 045
                  'function                                                                    ; 046
-;;;;;; illegal terminating character after a colon: #\)
                  (3-error '(not in normal form -- REF-TYPE) exp)))                            ; 047
     (atom    (3-error '(not in normal form -- REF-TYPE) exp))))                               ; 048
                                                                                               ; 049
@@ -1513,7 +1538,7 @@
 ;;; ===============                                                                             003
                                                                                               ; 004
 (defun 3-init ()                                                                              ; 005
- (princ '|   (initialising 3-LISP reflective model -- this take a few minutes)|)              ; 006
+ (princ '|   (initialising 3-LISP reflective model -- this takes a few minutes)|)             ; 006
  (setq                                                                                        ; 007
    3=in-use nil                                                                               ; 008
    3=level 1                                                                                  ; 009
@@ -1667,7 +1692,7 @@
                                                                                               ; 015
 (rplact (length global)                                                                       ; 016
         ↑global                                                                               ; 017
-        `[['CURRENT-ENV, ↑↑(reflect [['name ↑name]]                                           ; 018
+        `[['CURRENT-ENV ,↑↑(reflect [['name ↑name]]                                           ; 018
                                     '[[] env cont]                                            ; 019
                                     '(cont ↑env))]                                            ; 020
           ['LAMBDA ,↑↑(reflect ((reflect [['name ↑name]]                                      ; 021
