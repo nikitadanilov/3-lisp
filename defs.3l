@@ -30,3 +30,7 @@
 		      (block (terpri)
 			(print message)
 			(cont (read-normalise-print env)))))
+
+(define factorial (lambda reflect [[n] env cont]
+		       (let [[n! (normalise n env id)]]
+		          (cont (if (= ↓n! 0) ↑1 ↑(* ↓n! (factorial (- ↓n! 1))))))))
