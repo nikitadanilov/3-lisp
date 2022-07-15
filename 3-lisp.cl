@@ -70,18 +70,18 @@
 ;; than one would expect for such a sensitive part of the language) changes in
 ;; this area:
 ;;
-;;     READ-PRESERVING-WHITESPACE is used instead of read in a few places to
+;;     READ-PRESERVING-WHITESPACE is used instead of READ in a few places to
 ;;     avoid eating newlines, see READ*.
 ;;
 ;;     SET-SYNTAX-MACRO-CHAR  ->  SET-MACRO-CHARACTER.
 ;;
-;;     reader macro function (second argument to SET-MACRO-CHARACTER) takes
-;;     stream and character.
+;;     "Reader macro function" (the second argument to SET-MACRO-CHARACTER)
+;;     takes stream and character.
 ;;
-;;     There is no SET-SYNTAX-FROM-DESCRIPTION in common lisp and there are no
+;;     There is no SET-SYNTAX-FROM-DESCRIPTION in Common Lisp and there are no
 ;;     "self-delimiting single-character" symbols (see
 ;;     http://www.bitsavers.org/pdf/mit/cadr/chinual_5thEd_Jan83/chinualJan83_21_IOsystem.pdf,
-;;     p. 381, see CLTL 22.1.1 (p. 554)), SINGLE-MACRO-CHARACTER.
+;;     p. 381, see CLTL 22.1.1, p. 554), SINGLE-MACRO-CHARACTER.
 ;;
 ;;     Mysteriously, the parser table for this file (L=READTABLE) refers to the
 ;;     functions defined later in the file (i.e., not yet parsed at the time
@@ -98,7 +98,7 @@
 ;;     the backquote is consumed by the top-level activation of READ. Backslash
 ;;     forces the switch to 3-lisp readtable and call to 3-READ to handle the
 ;;     rest of the expression. Within this 3-READ activation, the tilde forces
-;;     switch back to L=READTABLE and call to READ to handle ",a". In Maclisp,
+;;     switch back to L=READTABLE and a call to READ to handle ",a". In Maclisp,
 ;;     this second READ activation re-uses the backquote context established by
 ;;     the top-level READ activation. Of all Common Lisp implementations that I
 ;;     tried, only sbcl correctly handles this situation. Lisp Works and clisp
