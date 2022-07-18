@@ -22,9 +22,9 @@
 ;;     *CATCH        CATCH
 ;;     *THROW        THROW
 ;;     READCH        READ-CHAR
-;;     /             \                       (as escape)
+;;     /             \                       (as an escape)
 ;;     DECLARE       PROCLAIM                (at the top level)
-;;     COMPILE       :COMPILE-TOPLEVEL       (eval-when keywords, see http://clhs.lisp.se/Body/s_eval_w.htm
+;;     COMPILE       :COMPILE-TOPLEVEL       (EVAL-WHEN keywords, see http://clhs.lisp.se/Body/s_eval_w.htm
 ;;     LOAD          :LOAD-TOPLEVEL           "The use of eval, compile, and load is deprecated.")
 ;;     EVAL          :EXECUTE
 ;;     READTABLE     *READTABLE*

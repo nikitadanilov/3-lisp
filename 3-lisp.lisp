@@ -11,12 +11,12 @@
 ;; Notation
 ;; --------
 ;;
-;; The text uses fairly Spartan character set, with the exception of left and up
-;; arrow symbols. Curiously, it is explicitly stated a few times that "!" is
+;; The text uses a fairly Spartan character set, with the exception of left and
+;; up arrow symbols. Curiously, it is explicitly stated a few times that "!" is
 ;; used instead of the "downarrow" symbol, because the latter is not in ASCII
 ;; (e.g., see p. 3, line 034 of the transcript), so presumably left and up
 ;; arrows *are* in ASCII. While "uparrow" can be identified with the caret ("^",
-;; U+005e), there is no obvious left arrow in modern ASCII (historically the 
+;; U+005e), there is no obvious left arrow in modern ASCII (historically the
 ;; underscore "_", U+005f sometimes was the left arrow).
 ;;
 ;; The transcription uses Unicode UPWARDS ARROW symbol (U+2191) "↑" for
