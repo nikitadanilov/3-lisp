@@ -1,4 +1,4 @@
-# 3-lisp: an infinite tower of meta-curcular interpreters.
+# 3-lisp: an infinite tower of meta-circular interpreters.
 
 3-lisp is a dialect of Lisp designed and implemented by [Brian C. Smith](https://en.wikipedia.org/wiki/Brian_Cantwell_Smith)
 as part of his PhD. thesis [Procedural Reflection in Programming Languages](https://dspace.mit.edu/handle/1721.1/15961), 
