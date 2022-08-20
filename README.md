@@ -31,3 +31,10 @@ When this lambda function is applied (at the object level), the body is directly
 Here is the fragment of `3-LISP` meta-circular interpreter code that handles `lambda reflect` (together with "ordinary" lambda-s, denoted by `lambda simple`):
 
 <a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1570"><img src="https://nikitadanilov.github.io/3-lisp/reduce.png"/></a>
+
+## Implementation
+
+<img src="https://nikitadanilov.github.io/3-lisp/infinity.png"/>
+
+## Conclusion
+
