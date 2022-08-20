@@ -29,4 +29,5 @@ Once `2-LISP` is constructed, adding reflective capability to it is relatively s
 When this lambda function is applied (at the object level), the body is directly executed (not interpreted) at the meta-level with `ARGS` bound to the meta-level representation of the actual paremeters, `ENV` bound to the *environment* (basicaly, the list of identifiers and the values they are bound to) and `CONT` is bound to the [continuation](https://en.wikipedia.org/wiki/Continuation). Environment and continuation together represent the interpreter state (much like registers and memory represent the machine language interpreter state), this representation goes all the way back to [SECD machine](https://en.wikipedia.org/wiki/SECD_machine), see [The Mechanical Evaluation of Expressions](https://doi.org/10.1093%2Fcomjnl%2F6.4.308).
 
 Here is the fragment of `3-LISP` meta-circular interpreter code that handles `lambda reflect` (together with "ordinary" lambda-s, denoted by `lambda simple`):
-<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L800"><img src="https://nikitadanilov.github.io/3-lisp/3-reduce.png"/></a>
+
+<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1570"><img src="https://nikitadanilov.github.io/3-lisp/reduce.png"/></a>
