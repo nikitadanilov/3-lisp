@@ -25,7 +25,7 @@ Once `2-LISP` is constructed, adding reflective capability to it is relatively s
 
 	(lambda reflect [ARGS ENV CONT] BODY)
 
-When this lambda function is applied (at the object level), the body is directly executed (not interpreted) at the meta-level with `ARGS` bound to the meta-level representation of the actual paremeters, `ENV` bound to the *environment* (basicaly, the list of identifiers and the values they are bound to) and `CONT` is bound to the [continuation](https://en.wikipedia.org/wiki/Continuation). Environment and continuation together represent the `3-LISP` interpreter state (much like registers and memory represent the machine language interpreter state), this representation goes all the way back to [SECD machine](https://en.wikipedia.org/wiki/SECD_machine), see [The Mechanical Evaluation of Expressions](https://doi.org/10.1093%2Fcomjnl%2F6.4.308).
+When this lambda function is applied (at the object level), the body is directly executed (not interpreted) at the meta-level with `ARGS` bound to the meta-level representation of the actual paremeters, `ENV` bound to the *environment* (basicaly, the list of identifiers and the values they are bound to) and `CONT` bound to the [continuation](https://en.wikipedia.org/wiki/Continuation). Environment and continuation together represent the `3-LISP` interpreter state (much like registers and memory represent the machine language interpreter state), this representation goes all the way back to [SECD machine](https://en.wikipedia.org/wiki/SECD_machine), see [The Mechanical Evaluation of Expressions](https://doi.org/10.1093%2Fcomjnl%2F6.4.308).
 
 Here is the fragment of `3-LISP` meta-circular interpreter code that handles `lambda reflect` (together with "ordinary" lambda-s, denoted by `lambda simple`):
 
@@ -45,7 +45,7 @@ The sources are in [CADR machine](https://dspace.mit.edu/handle/1721.1/5718) dia
 
 `3-LISP` implementation does not have its own parser or interpreter. Instead it uses flexibility built in a lisp reader (see, [readtables](https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node192.html)) to parse, interpret and even compile `3-LISP` with a very small amount of additional code. Amazingly, this more than 40 years old code, which uses arcane features like readtable customisation, runs on a modern [Common Lisp](https://en.wikipedia.org/wiki/Common_Lisp) platform after a very small set of changes: some functions got renamed (`CASEQ` to `CASE`, `*CATCH` to `CATCH`, *etc*.), some functions are missing (`MEMQ`, `FIXP`), some signatues changed (`TYPEP`, `BREAK`, `IF`). See [3-lisp.cl](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl) for details.
 
-Unfortunately, the port does not run on *all* modern Common Lisp implementations, because it relies on proper support for [backquotes](https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html) across recursive reader [invocations](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl#L92):
+Unfortunately, the port does not run on *all* modern Common Lisp implementations, because it relies on the proper support for [backquotes](https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html) across recursive reader [invocations](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl#L92):
 
     ;;     Maclisp maintains backquote context across recursive parser
     ;;     invocations. For example in the expression (which happens within defun
@@ -66,4 +66,5 @@ Unfortunately, the port does not run on *all* modern Common Lisp implementations
 Among Common Lisp implementations I tried, only [sbcl](https://www.sbcl.org/) supports it properly. After reading Common Lisp [Hyperspec](http://www.lispworks.com/documentation/common-lisp.html), I believe that it is Maclisp and sbcl that implement the specification correctly and other implementations are faulty.
 
 ## Conclusion
+Procedural Reflection in Programming Languages is, inspite of its age, a very interesting read. Not only in contains an implementation of a refreshingly new and bold idea (it is not even immediately obvious that infinite reflective towers can at all be implemented, not to say with any reasonable degree of efficiency), it is based on an interplay between mathematics and programming: the model of computation is proposed and afterwards implemented in `3-LISP`. Because the model is implemented in an actual running program, it has to be specified with extreme precision (which would make [Tarski](https://en.wikipedia.org/wiki/Alfred_Tarski) and [Łukasiewicz](https://en.wikipedia.org/wiki/Jan_%C5%81ukasiewicz) tremble), and any execution of the `3-LISP` interpreter validates the model. 
 
