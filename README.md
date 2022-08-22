@@ -4,9 +4,8 @@
 
 ## Précis
 3-lisp is a dialect of Lisp designed and implemented by [Brian C. Smith](https://en.wikipedia.org/wiki/Brian_Cantwell_Smith)
-as part of his PhD. thesis [Procedural Reflection in Programming Languages](https://dspace.mit.edu/handle/1721.1/15961), 
-also available in this repository. What this thesis refers to as "[reflection](https://en.wikipedia.org/wiki/Reflective_programming)" 
-is nowadays more usually called "[reification](https://en.wikipedia.org/wiki/Reification_(computer_science))".
+as part of his PhD. thesis [Procedural Reflection in Programming Languages](https://dspace.mit.edu/handle/1721.1/15961) (what this thesis refers to as "[reflection](https://en.wikipedia.org/wiki/Reflective_programming)" 
+is nowadays more usually called "[reification](https://en.wikipedia.org/wiki/Reification_(computer_science))"). 3-lisp program is conceptually executed by an interpreter written in 3-lisp that is itself executed by an interpreter written in 3-lisp and so on *ad infinitum*. This forms a (countably) infinite tower of meta-circular (*v.i.*) interpreters. *reflective lambda* is a function that is executed one tower level above its caller. Reflective lambdas provide a very general language extension mechanism.
 
 ## Meta-circular interpreters
 An [interpreter](https://en.wikipedia.org/wiki/Interpreter_(computing)) is a
@@ -26,15 +25,45 @@ Once `2-LISP` is constructed, adding reflective capability to it is relatively s
 
 	(lambda reflect [ARGS ENV CONT] BODY)
 
-When this lambda function is applied (at the object level), the body is directly executed (not interpreted) at the meta-level with `ARGS` bound to the meta-level representation of the actual paremeters, `ENV` bound to the *environment* (basicaly, the list of identifiers and the values they are bound to) and `CONT` is bound to the [continuation](https://en.wikipedia.org/wiki/Continuation). Environment and continuation together represent the interpreter state (much like registers and memory represent the machine language interpreter state), this representation goes all the way back to [SECD machine](https://en.wikipedia.org/wiki/SECD_machine), see [The Mechanical Evaluation of Expressions](https://doi.org/10.1093%2Fcomjnl%2F6.4.308).
+When this lambda function is applied (at the object level), the body is directly executed (not interpreted) at the meta-level with `ARGS` bound to the meta-level representation of the actual paremeters, `ENV` bound to the *environment* (basicaly, the list of identifiers and the values they are bound to) and `CONT` is bound to the [continuation](https://en.wikipedia.org/wiki/Continuation). Environment and continuation together represent the `3-LISP` interpreter state (much like registers and memory represent the machine language interpreter state), this representation goes all the way back to [SECD machine](https://en.wikipedia.org/wiki/SECD_machine), see [The Mechanical Evaluation of Expressions](https://doi.org/10.1093%2Fcomjnl%2F6.4.308).
 
 Here is the fragment of `3-LISP` meta-circular interpreter code that handles `lambda reflect` (together with "ordinary" lambda-s, denoted by `lambda simple`):
 
 <a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1570"><img src="https://nikitadanilov.github.io/3-lisp/reduce.png"/></a>
 
 ## Implementation
+It is of course not possible to run an infinite tower of interpreters directly.
 
 <img src="https://nikitadanilov.github.io/3-lisp/infinity.png"/>
+
+`3-LISP` implementation creates a meta-level on demand, when a reflective lambda is invoked. At that moment the state of the meta-level interpreter is synthesised (*e.g.*, [see](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1586) `make-c1` in the listing above). The implementation takes pain to detect when it can drop down to a lower level, which is not entirely simple because a reflective lambda can, instead of returning (that is, invoking the supplied continuation), run a potentually modified version of read-eval-loop (called `READ-NORMALISE-PRINT` ([see](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1563)) in `3-LISP`) which does not return. There is a lot on non-trivial machinery operating behind the scenes and though the implementation modestly proclaims itself [EXTREMELY INEFFICIENT](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L33) it is, in fact, remarkably fast.
+
+## Porting
+I was unable to find a digital copy of the `3-LISP` sources and so manually retyped the sources from the appendix of the thesis. The transcription in [3-lisp.lisp](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp) (2003 lines, 200K characters) preserves the original pagination and character set, see the comments at the top of the file. Transcription was mostly straight-forward except for a few places where the PDF is illegible (for example, [here](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L396)) all of which fortunately are within comment blocks.
+
+The sources are in [CADR machine](https://dspace.mit.edu/handle/1721.1/5718) dialect of LISP, which, save for some minimal and no longer relevant details, is equivalent to Maclisp.
+
+`3-LISP` implementation does not have its own parser or interpreter. Instead it uses flexibility built in a lisp reader (see, [readtables](https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node192.html)) to parse, interpret and even compile `3-LISP` with a very small amount of additional code. Amazingly, this more than 40 years old code, which uses arcane features like readtable customisation, runs on a modern [Common Lisp](https://en.wikipedia.org/wiki/Common_Lisp) platform after a very small set of changes: some functions got renamed (`CASEQ` to `CASE`, `*CATCH` to `CATCH`, *etc*.), some functions are missing (`MEMQ`, `FIXP`), some signatues changed (`TYPEP`, `BREAK`, `IF`). See [3-lisp.cl](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl) for details.
+
+Unfortunately, the port does not run on *all* modern Common Lisp implementations, because it relies on proper support for [backquotes](https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html) across recursive reader [invocations](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl#L92):
+
+    ;;     Maclisp maintains backquote context across recursive parser
+    ;;     invocations. For example in the expression (which happens within defun
+    ;;     3-EXPAND-PAIR)
+    ;;
+    ;;         `\(PCONS ~,a ~,d)
+    ;;
+    ;;     the backquote is consumed by the top-level activation of READ. Backslash
+    ;;     forces the switch to 3-lisp readtable and call to 3-READ to handle the
+    ;;     rest of the expression. Within this 3-READ activation, the tilde forces
+    ;;     switch back to L=READTABLE and a call to READ to handle ",a". In Maclisp,
+    ;;     this second READ activation re-uses the backquote context established by
+    ;;     the top-level READ activation. Of all Common Lisp implementations that I
+    ;;     tried, only sbcl correctly handles this situation. Lisp Works and clisp
+    ;;     complain about "comma outside of backquote". In clisp,
+    ;;     clisp-2.49/src/io.d:read_top() explicitly binds BACKQUOTE-LEVEL to nil.
+
+Among Common Lisp implementations I tried, only [sbcl](https://www.sbcl.org/) supports it properly. After reading Common Lisp [Hyperspec](http://www.lispworks.com/documentation/common-lisp.html), I believe that it is Maclisp and sbcl that implement the specification correctly and other implementations are faulty.
 
 ## Conclusion
 

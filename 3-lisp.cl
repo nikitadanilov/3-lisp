@@ -6,7 +6,7 @@
 ;;     (load "3-lisp.cl")                                 ; sbcl
 ;; so much for portability.
 
-;; This is port of 3-lisp.lisp from CADR-machine LISP (mostly Maclisp) to a
+;; This is a port of 3-lisp.lisp from CADR-machine LISP (mostly Maclisp) to a
 ;; modern Common Lisp.
 
 ;; Porting notes.
