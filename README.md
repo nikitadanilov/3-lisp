@@ -7,6 +7,13 @@
 as part of his PhD. thesis [Procedural Reflection in Programming Languages](https://dspace.mit.edu/handle/1721.1/15961) (what this thesis refers to as "[reflection](https://en.wikipedia.org/wiki/Reflective_programming)" 
 is nowadays more usually called "[reification](https://en.wikipedia.org/wiki/Reification_(computer_science))"). A 3-lisp program is conceptually executed by an interpreter written in 3-lisp that is itself executed by an interpreter written in 3-lisp and so on *ad infinitum*. This forms a (countably) infinite tower of meta-circular (*v.i.*) interpreters. *reflective lambda* is a function that is executed one tower level above its caller. Reflective lambdas provide a very general language extension mechanism.
 
+This repository contains:
+
+- a copy of the thesis: [Procedural Reflection in Programming Languages.pdf](https://github.com/nikitadanilov/3-lisp/blob/master/Procedural%20Reflection%20in%20Programming%20Languages.pdf)
+- a transcript of the 3-lisp sources from the thesis appendix: [3-lisp.lisp](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp)
+- version of the sources ported to modern Common Lisp: [3-lisp.cl](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.cl)
+- some 3-lisp definitions from the thesis: [defs.3l](https://github.com/nikitadanilov/3-lisp/blob/master/defs.3l)
+
 ## Meta-circular interpreters
 An [interpreter](https://en.wikipedia.org/wiki/Interpreter_(computing)) is a
 program that executes programs written in some programming language.
