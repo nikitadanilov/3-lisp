@@ -47,14 +47,14 @@
 ;;;     3. Pairs        -- Functions (& appns)  -- (<exp> . <exp>)                              023
 ;;;     4. Rails        -- Sequences            -- [<exp> <exp> ... <exp>]                      024
 ;;;     5. Handles      -- S-expressions        -- '<exp>                                       025
-;;;     6. Atoms        -- (whatever bound to)  -- sequences of alphanumerics                   026
+;;;     6. Atoms        -- (whatever bound to)  -- sequence of alphanumerics                    026
 ;;;                                                                                             027
 ;;; a. There is no derived notion of a LIST, and no atom NIL.                                   028
 ;;; b. Pairs and rails are pseudo-composite; the rest are atomic.                               029
 ;;; c. Numerals, booleans, and handles are all normal-form and canonical.                       030
 ;;;    Some rails (those whose elements are normal form) and some pairs                         031
 ;;;    (the closures) are normal form, but neither type is canonical.                           032
-;;;    No atoms are normal form.                                                                033
+;;;    No atoms are normal-form.                                                                033
                                                                                               ; 034
 ;;; 2. Semantics:  The semantical domain is typed as follows:                                   035
 ;;; -------------                                                                               036
@@ -71,15 +71,15 @@
 ;;;                |                                                                            047
 ;;;                |_________________________ function                                          048
                                                                                               ; 049
-;;; 3. Notation                                                                                 050
-;;; -----------                                                                                 051
+;;; 3. Notation:                                                                                050
+;;; ------------                                                                                051
 ;;;                                                                                             052
 ;;; Each structural field category is notated with a distinguishable notational                 053
-;;; category, recognisable in the first character. as follows (thus 3-LISP                      054
-;;; could be parsed by a grammar with a single character look-ahead):                           055
+;;; category, recognisable in the first character, as follows (thus 3-LISP                      054
+;;; could be parsed by a grammar with a single-character look-ahead):                           055
 ;;;                                                                                             056
 ;;;     1. Digit        -->  Numeral      4. Left bracket    --> Rail                           057
-;;;     2. Dollar sign  -->  Boolean      5. Single quote    --> Handle                         058
+;;;     2. Dollar sign  -->  Boolean      5. Singe quote     --> Handle                         058
 ;;;     3. Left paren   -->  Pair         6. Non-digit       --> Atom                           059
 ;;;                                                                                             060
 ;;; The only exceptions are that numerals can have a leading "+" or "-", and in                 061
@@ -120,7 +120,7 @@
 ;;; L-boolean   -- $T and $F to each of the two booleans;                                       096
 ;;; L-pair      -- A new (otherwise inaccessible) pair whose CAR is THETA of                    097
 ;;;                the first formula and whose CDR is THETA of the second;                      098
-;;; L-rail      -- A new (otherwise inaccessible) tail whose elements are THETA                 099
+;;; L-rail      -- A new (otherwise inaccessible) rail whose elements are THETA                 099
 ;;;                of each of the constituent formulae;                                         100
 ;;; L-handle    -- The handle of THETA of the constituent formula.                              101 [sic. "." vs. ";"]
 ;;; L-atom      -- The corresponding atom.                                                      102
@@ -133,7 +133,7 @@
 ;;;     "(<e1> <e2> ... <en>)" abbreviates "(<e1> . [<e2> ... <en>])"                           109
 ;;;                                                                                             110
 ;;; 3. We use exclamation point in place of down-arrow, since MACLISP does                      111
-;;;    not support the latter character (in it not in ASCII, sadly).                            112
+;;;    not support the latter character (it is not in ASCII, sadly).                            112
 ;;; 4. A Summary of the use of reserved characters:                                             113
 ;;;                                                                                             114
 ;;;    a:  (  -- starts pairs                h:  .  -- in "[ ... ]" for JOIN                    115
@@ -144,13 +144,13 @@
 ;;;    f:  '  -- starts handles              m:  ,  --    "      "  "    "                      120
 ;;;    g:  ;  -- starts comments (to CRLF)   n:  ~  -- Switch to MACLISP                        121
 ;;;                                                                                             122
-;;;    A-g are primitive, h-m are sugar, and n in implementation-specific.  In                  123
+;;;    A-g are primitive, h-m are sugar, and n is implementation-specific.  In                  123
 ;;;    this implementation, since "!" is used for REFERENT (it should be                        124
 ;;;    down-arrow), it is reserved rather than special.  Similarly, "~" is                      125
 ;;;    reserved in this implementation for the MACLISP escape.  Finally, the                    126
-;;;    characters "{", "}", "|" and """ are reserved but not currently used                     127
+;;;    characters "{", "}", "|", and """ are reserved but not currently used                     127
 ;;;    (intended for sacks, arbitrary atom names (a la MACLISP) and strings).                   128
-;;;                                                                                 Page 1:2    129
+                                                                                    Page 1:2    129
 ;;; 4. Processor:                                                                               130
 ;;; -------------                                                                               131
 ;;;                                                                                             132
@@ -168,7 +168,7 @@
 ;;;     6. Environments                 Rails: [['<a1> '<b1>] ['<a2> '<b2>] ... ]               144
 ;;;                                                                                             145
 ;;; 1-3 are CANONICAL, 4-6 are not.  Thus, A = B implies ↑A = ↑B only if A and                  146
-;;; B designate numbers, truth-values, or s-expressions                                         147
+;;; B designate numbers, truth-values, or s-expressions.                                        147
                                                                                               ; 148
 ;;; 5. Primitive procedures:                                                                    149
 ;;; ------------------------                                                                    150
@@ -190,7 +190,7 @@
 ;;; I/O:          READ, PRINT, TERPRI   -- as usual                                             166
 ;;; Reflection:   LEVEL                 -- the current reflective level                         167
 ;;;                                                                                             168
-;;; The following kernel functions need NOT be primitive: they are defined in                   169
+;;; The following kernel functions need NOT be primitive; they are defined in                   169
 ;;; the reflective model in terms of the above:                                                 170
 ;;;                                                                                             171
 ;;;     DEFINE, LAMBDA, NORMALISE, REDUCE, SET, BINDING, MACRO                                  172
@@ -200,22 +200,22 @@
 ;;;     Form of use             Designation (environment relative):                             176
 ;;;                                                                                             177
 ;;;  (TYPE <exp>)           -- The atom indicating the type of <exp> (one of                    178
-;;;                            the 10 on the fringe of the tree in #1, above)                   179
+;;;                            the 10 on the fringe of the tree in #2, above)                   179
 ;;;                                                                                             180
 ;;;  (= <a> <b>)            -- Truth if <a> and <b> are the same, falsity                       181
 ;;;                            otherwise, providing <a> and <b> are of the                      182
-;;;                            same type and are s-expressions, truth-values,                   183
+;;;                            same type, and are s-expressions, truth-values,                  183
 ;;;                            sequences, or numbers                                            184
 ;;;                                                                                             185
 ;;;  (PCONS <a> <b>)        -- A (new) pair whose CAR is <a> and CDR is <b>                     186
 ;;;  (CAR <a>)              -- The CAR of pair <a>                                              187
-;;;  (CDR <a>)              -- The CDR of pair <b>                                              188
+;;;  (CDR <a>)              -- The CDR of pair <a>                                              188
 ;;;  (RPLACA <a> <b>)       -- The new CAR <b> of modified pair <a>                             189
 ;;;  (RPLACD <a> <b>)       -- The new CDR <b> of modified pair <a>                             190
 ;;;                                                                                             191
 ;;;  (LENGTH <a>)           -- The length of rail or sequence <a>                               192
-;;;  (NTH <n> <a>)          -- The <n>th element of rail of sequence <a>                        193
-;;;  (TAIL <n> <a>)         -- Tail of rail/seq <a> starting after <n>th element                194
+;;;  (NTH <n> <a>)          -- The <n>th element of rail or sequence <a>                        193
+;;;  (TAIL <n> <a>)         -- Tail of rail/seq <a> starting after <n>th elemnt                 194
 ;;;  (RCONS <a1> ... <ak>)  -- A new rail whose elements are <a1>, ... , <ak>                   195 [sic. comma spacing]
 ;;;  (SCONS <a1> ... <ak>)  -- The sequence whose elements are <a1>, ..., <ak>                  196
 ;;;  (PREP <a> <rs>)        -- A new rail/seq whose 1st is <a>, 1st tail is <b>                 197 [sic. <b>, leg. <rs>]
@@ -226,7 +226,7 @@
 ;;;  (REFLECT <e> <p> <b>)     designated by the lambda abstraction of pattern                  202
 ;;;                            <p> over expression <b> in environment <e>)                      203
 ;;;                                                                                             204
-;;;  (EF <p> <a> <b>)       -- <a>, if <p> designates truth; <b> is falsity.                    205 [sic. full stop]
+;;;  (EF <p> <a> <b>)       -- <a>, if <p> designates truth; <b> if falsity.                    205 [sic. full stop]
 ;;;                                                                                             206
 ;;;  (NAME <a>)             -- The (or a) normal-form designator of <a>                         207
 ;;;  (REFERENT <a> <env>)   -- The object designated by <a> in environment <env>                208
@@ -263,9 +263,9 @@
 ;;; "(READ-NORMALISE-PRINT GLOBAL)", which causes the level below it to read                    239
 ;;; an expression, which is in turn given "(READ-NORMALISE-PRINT GLOBAL)",                      240
 ;;; and so forth, until finally the second reflective level is given                            241
-;;; "(READ-NORMALISE-PRINT GLOBAL)". This types "1>" on the console,                            242
+;;; "(READ-NORMALISE-PRINT GLOBAL)". This types out "1>" on the console,                        242
 ;;; and awaits YOUR input.                                                                      243
-;;;                                                                                             244
+                                                                                                244
 ;;; 7. Environments:                                                                            245
 ;;; ----------------                                                                            246
 ;;;                                                                                             247
@@ -277,12 +277,12 @@
 ;;; first element is the variable is the binding of that variable in that                       253
 ;;; environment).  Environments can also share tails: this is implemented by                    254
 ;;; normal-form environment designators sharing tails (this is used heavily in                  255
-;;; the GLOBAL/ROOT/LOCAL protocols, and so forth).  Effecting a side effect on                 256
+;;; the GLOBAL/ROOT/LOCAL protocols, and so forth).  Effecting a side-effect on                 256
 ;;; the standard normal-form environment designator CHANGES what the environment                257
 ;;; is, which is as it should be.  Each level is initialised with the same global               258
 ;;; environment (the implementation does not support root environments -- see                   259
 ;;; note 11).                                                                       Page 1:4    260
-;;;                                                                                             261
+                                                                                                261
 ;;; 8. Implementation:                                                                          262
 ;;; ------------------                                                                          263
 ;;;                                                                                             264
@@ -305,7 +305,7 @@
 ;;; 3-NORMALISE etc.), the code assumes that the incoming values are already in                 281
 ;;; normal form.  A more efficient but trickier strategy would be to put these                  282
 ;;; objects together only if and when they were called for; I haven't attempted                 283
-;;; that here.  This would be all made simpler if both environments and                         284
+;;; that here.  This would all be made simpler if both environments and                         284
 ;;; continuations were functions abstractly defined: no copying of structure                    285
 ;;; would ever be needed, since the appropriate behaviour could be wrapped                      286
 ;;; around the information in whatever form it was encoded in the primitive                     287
@@ -321,7 +321,7 @@
 ;;;                                                                                             297
 ;;; The standard continuation types, called C0 - C3, are identified in the                      298
 ;;; comments and in the definitions of NORMALISE and REDUCE (q.v.), and listed                  299
-;;; below.  These types must be recognised by 3-APPLY and 3-REDUCE, so that the                 300
+;;; below.  These types must be recognized by 3-APPLY and 3-REDUCE, so that the                 300
 ;;; implementing processor can drop down whenever possible, whether or not the                  301
 ;;; explicit interpretation of a (non-primitive) reflective function has                        302
 ;;; intervened.  The atoms ~C0~, ~C1~, ~C2~, and ~C3~ -- called the SIMPLE                      303
@@ -351,6 +351,7 @@
 ;;;                                                                                             327
 ;;;   (C4:  Identifies top level call of READ-NORMALISE-PRINT.)                                 328
 ;;;   (C5:  Used in order to read in 3-LISP structures by IN-3-LISP.)                           329
+;;;
 ;;; Programming conventions:                                                        Page 1:5    331 [sic. no 330]
 ;;;                                                                                             332
 ;;; Special variables are prefixed with "3=".  Procedures are prefixed with "3-".               333
@@ -359,7 +360,7 @@
 ;;; to the 3-LISP structure.  For example, 3-EQUAL returns T if the two arguments               336
 ;;; encode the same 3-LISP structure.                                                           337
 ;;;                                                                                             338
-;;; NOTE: in fall 1981, the implementation was minimally changed to run on an MIT               339
+;;; NOTE: In fall 1981, the implementation was minimally changed to run on an MIT               339
 ;;; CADR machine, not in MACLISP.  The only concessions to the new base were in                 340
 ;;; the treatment of I/O and interrupts; no particular features of the CADR have                341
 ;;; been used.  It should therefore require minimal work to retrofit it to a                    342
@@ -373,7 +374,7 @@
 ;;; either the use of full bi-directional linkages, or "invisible pointers" (a                  350
 ;;; true LISP-machine implementation could perhaps use the underlying invisible                 351
 ;;; pointer facility) and special circularity checking.  We choose the latter                   352
-;;; option.  The implementation (where "+" means one of more, "*" means zero or                 353
+;;; option.  The implementation (where "+" means one or more, "*" means zero or                 353
 ;;; more) of a rail is:                                                                         354
 ;;;                                                                                             355
 ;;;     [a b ... z]   ==>   (<~RAIL~>+ a <~RAIL~>* b ... <~RAIL~>* z <~RAIL~>*)                 356
@@ -387,7 +388,7 @@
 ;;; of elements.  With arbitrary RPLACT'ing, the efficiency can get arbitrarily                 364
 ;;; bad (although it could be corrected back to a linear constant of 2 by a                     365
 ;;; compacting garbage collector.)                                                              366 [sic. stop placement]
-;;;                                                                                             367
+                                                                                                367
 ;;; 10. User Interface:                                                                         368
 ;;; -------------------                                                                         369
 ;;;                                                                                             370
@@ -421,8 +422,10 @@
 ;;;     (in-3-lisp \[                                                                           398
 ;;;                                                                                             399
 ;;;     (define increment (lambda simple [x] (+ x 1)))                                          400
-;;;     (define quit      (lambda reflect ? 'QUIT))               ])                            401
+;;;     (define quit      (lambda reflect ? 'QUIT))                                             401
 ;;;                                                                                 Page 1:6    404 [sic. no 402, 403]
+;;;     ])
+
 ;;; 11. Limitations of the Implementation:                                                      405
 ;;; --------------------------------------                                                      406
 ;;;                                                                                             407
@@ -439,13 +442,13 @@
 ;;;                                                                                             418
 ;;; 3. In part because I think it may be a bad idea, this implementation does                   419
 ;;;    not support a root environment protocol.                                                 420
-;;;                                                                                             421
+                                                                                                421
 ;;; 12. Obvious Extensions:                                                                     422
 ;;; -----------------------                                                                     423
 ;;;                                                                                             424
 ;;; Obvious extensions to the implementation fall into two groups: those that                   425
 ;;; would increase the efficiency of the implementation, but not change its                     426
-;;; basic functionality, and those that would extent that functionality.                        427
+;;; basic functionality, and those that would extend that functionality.                        427
 ;;; Regarding the first, the following are obvious candidates:                                  428
 ;;;                                                                                             429
 ;;; 1. Get rid of the automatic consing of continuation and environment                         430
@@ -454,23 +457,23 @@
 ;;; 2. Support various intensional procedures (LAMBDA, IF, COND, MACRO, SELECT,                 433
 ;;;    and so forth) as primitives.  This would require the virtual provision                   434
 ;;;    of all of the continuation structure at the reflective level that would                  435
-;;;    have been generated has the definitions used here been used explicitly:                  436
+;;;    have been generated had the definitions used here been used explicitly:                  436
 ;;;    it wouldn't be trivial.  Unless, of course, the language was redefined                   437
 ;;;    to include these as primitives (but the current proof of its finiteness                  438
 ;;;    depends on no reflective primitives, so this too would take some work).                  439
 ;;;                                                                                             440
 ;;; Functional extensions include:                                                              441
 ;;;                                                                                             442
-;;; 1. Make the bodies of LAMBDA, LET, COND, etc. take multiple expressions                     443
+;;; 1. Make the bodies of LAMDBA, LET, COND, etc. take multiple expressions                     443
 ;;;    (i.e. be virtual BLOCK bodies).                                                          444
 ;;;                                                                                             445
-;;; 2. Strings (all normal-form string designators, perhaps called "STRINGERS")                 446
+;;; 2. Strings (and normal-form string designators, perhaps called "STRINGERS")                 446
 ;;;    could be added.                                                                          447
                                                                                               ; 448
 
 ;;;                                                                                 Page 2      001
-;;; Declaration and Macros:                                                                     002
-;;; =======================                                                                     003
+;;; Declarations and Macros:                                                                    002
+;;; ========================                                                                    003
                                                                                               ; 004
 (declare                                                                                      ; 005
   (special                                                                                    ; 006
@@ -515,7 +518,7 @@
                                                                                               ; 045
 (defmacro 3-normalise* (exp env cont)                                                         ; 046
    `(progn (setq 3=a1 ,exp 3=a2 ,env 3=a3 ,cont)                                              ; 047
-           (throw '3-main-loop 'nil)))                                                        ; 048
+           (*throw '3-main-loop 'nil)))                                                       ; 048
                                                                                               ; 049
 ;;; The rest of the macro definitions are RAIL specific:                                        050
                                                                                               ; 051
@@ -530,7 +533,7 @@
 ;;; -------              have to step through as many headers as have built up.                 060 [sic. "have"]
 ;;;                                                                                             061
 ;;; 3-STRIP*          -- Returns the last header of arg -- used for RPLACD, and                 062
-;;; --------             to establish rail identify.  Steps down through headers.               063
+;;; --------             to establish rail identity.  Steps down through headers.               063
                                                                                               ; 064
 (eval-when (load eval compile)                                                                ; 065
                                                                                               ; 066
@@ -595,7 +598,7 @@
                                                                                               ; 042
 (eval-when (load eval compile)                                                                ; 043
                                                                                               ; 044
-;;; Five constants needed to be defined for 3-LISP structures to be read in:                    045
+;;; Five constants need to be defined for 3-LISP structures to be read in:                      045
                                                                                               ; 046
 (setq S=readtable readtable                       ; Save the system readtable                 ; 047
       L=readtable (copy-readtable)                ; and name two special ones:                ; 048
@@ -632,7 +635,7 @@
    (set-syntax-from-description #/. 'si:single))                                              ; 078
                                                                                               ; 079
 ;;; 3-READ(*)  Read in one 3-LISP s-expression (*-version assumes the                           080
-;;;            3-LISP readtable is already in force, and accepts an                             081
+;;; ---------  3-LISP readtable is already in force, and accepts an                             081
 ;;;            optional list of otherwise illegal atoms to let through).                        082
                                                                                               ; 083
 (defun 3-read (&optional stream)                                                              ; 084
@@ -689,7 +692,7 @@
       (cons '~3-COMMA (read stream))))                                                        ; 134
                                                                                               ; 135
 ;;; The second argument to the next 3 procedures is a flag: NIL if the                          136
-;;; backquote was at this level; T is not (implying that coalescing can                         137
+;;; backquote was at this level; T if not (implying that coalescing can                         137
 ;;; happen if possible).                                                                        138
                                                                                               ; 139
 (defun 3-expand (x f)                                                                         ; 140
@@ -701,7 +704,7 @@
 (defun 3-expand-pair (x f)                                                                    ; 146
    (cond ((eq (car x) '~3-COMMA) (cdr x))       ; Found a ",<expr>".                          ; 147
          ((eq (car x) '~3-BACKQUOTE)            ; Recursive use of backq, so                  ; 148
-          (3-expand (macroexpand x) f))         ; expand the inner one of then                ; 149
+          (3-expand (macroexpand x) f))         ; expand the inner one and then               ; 149
          (t (let ((a (3-expand (car x) t))      ; this one.                                   ; 150
                   (d (3-expand (cdr x) t)))                                                   ; 151
                (if (and f (3-handle a) (3-handle d))                                          ; 152
@@ -784,11 +787,11 @@
 ;;;                                                                                             005
 ;;; 3-NORMALISE and 3-REDUCE    The second clause in the following takes care                   006
 ;;; ------------------------    of numerals, booleans, handles, normal-form                     007
-;;;                             function designators (applications in term of                   008
+;;;                             function designators (applications in terms of                  008
 ;;; the functions SIMPLE, MACRO, and REFLECT whose args are in normal form),                    009
 ;;; and normal-form sequence designators (rails whose elements are all in                       010
 ;;; normal-form).  Thus all normal-form expressions normalise to themselves,                    011
-;;; even those (like rails and function designators) that are not canonical                     012
+;;; even those (like rails and function-designators) that are not canonical                     012
 ;;; designators of their referents.                                                             013
                                                                                               ; 014
 (defun 3-normalise (exp env cont)                                                             ; 015
@@ -814,13 +817,13 @@
        (3-normalise* (3r-1st rail) env                                                        ; 035
           `\(~~C2~ [['rail ~,↑rail] ['env ~,↑env] ['cont ~,↑cont]]              ; C2          ; 036
                    '[element*]                                                                ; 037
-                   '(normalise-rail (rest tail) env                                           ; 038
+                   '(normalise-rail (rest rail) env                                           ; 038
                        (lambda simple [rest*]                                                 ; 039
                          (cont (prep element* rest*))))))))                                   ; 040
                                                                                               ; 041
 ;;; 3-PRIMITIVE-REDUCE-SIMPLE  The way each primitive function is treated is                    042
 ;;; -------------------------  highly dependent on the way that 3-LISP                          043
-;;;                            structures are encoded in MACLISP                                044
+;;;                            structures are encoded in MACLISP.                               044
                                                                                               ; 045
 (defun 3-primitive-reduce-simple (proc args cont)                                             ; 046
   (3-rail-check args)                                                                         ; 047
@@ -917,7 +920,7 @@
 ;;; C1:  Accept the normalised arguments to a SIMPLE application.  Dispatch                     055
 ;;; ---  on primitives, and reflect down in case we encounter a call to a                       056
 ;;;      continuation we ourselves once put together.  Also trap explicit calls                 057
-;;;      to NORMALISE and REDUCE, for efficinecy.                                               058
+;;;      to NORMALISE and REDUCE, for efficiency.                                               058
                                                                                               ; 059
 (defun ~C1~ (env cont args*)                                                                  ; 060
    ignore cont                                                                                ; 061
@@ -1036,8 +1039,8 @@
                                   ((null vals) (3-error '|Too few arguments supplied|))       ; 040
                                   (t (3-error '|Too many arguments supplied|)))))             ; 041
                        (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|)))                ; 042
-           (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                        ; 043
-    (t (3-type-error vals '|ATOM, RAIL, or RAIL DESIGNATOR|))))                               ; 044
+           (t (3-type-error vals '|ATOM, RAIL, OR RAIL DESIGNATOR|))))                        ; 043
+    (t (3-type-error vals '|ATOM, RAIL, OR RAIL DESIGNATOR|))))                               ; 044
                                                                                               ; 045
 (defun 3-rebind (var binding env)                                                             ; 046
    (3-atom-check var)                                                                         ; 047
@@ -1054,7 +1057,7 @@
 ;;; Reflective state management:                                                                002
 ;;; ============================                                                                003
 ;;;                                                                                             004
-;;; 3-STATES is a queue of the environment and continuation of each reflective                  005
+;;; 3=STATES is a queue of the environment and continuation of each reflective                  005
 ;;; level ABOVE the current one (the value of 3=LEVEL), if they were ever                       006
 ;;; explicitly generated (all relevant ones BELOW the current level are of                      007
 ;;; course being passed around explicitly in 3-LISP programs).                                  008
@@ -1095,13 +1098,13 @@
       ((null args) (cons '~RAIL~ (nreverse new)))))                                           ; 018
                                                                                               ; 019
 ;;; 3-RS  Macro that takes two forms, one for rails and one for sequences,                      020
-;;; ----  and wraps the appropariate type dispatch around them.                                 021
+;;; ----  and wraps the appropriate type dispatch around them.                                  021
                                                                                               ; 022
 (defmacro 3-rs (exp rail-form seq-form)                                                       ; 023
    `(caseq (3-type ,exp)                                                                      ; 024
        (handle ,rail-form)                                                                    ; 025
        (rail ,seq-form)                                                                       ; 026
-       (t (3-ref-type-err ,exp '|RAIL OR SEQUENCE|))))                                        ; 027
+       (t (3-ref-type-error ,exp '|RAIL OR SEQUENCE|))))                                      ; 027
                                                                                               ; 028
 ;;; 3-PREP      -- These four kinds are defined over both rails and sequences.                  029
 ;;; 3-LENGTH       They are all defined in terms of *-versions, which operate                   030
@@ -1124,7 +1127,7 @@
    (3-rs exp ↑(car (3-nthcdr* n (3-rail-check !exp)))                                         ; 047
               (car (3-nthcdr* n exp))))                                                       ; 048
                                                                                               ; 049
-;;; 3-RPLACN   Defined onlu on RAILS.                                                           050
+;;; 3-RPLACN   Defined only on RAILS.                                                           050
 ;;; --------                                                                                    051
                                                                                               ; 052
 (defun 3-rplacn (n rail el)                                                                   ; 053
@@ -1403,7 +1406,7 @@
 (defun 3-ref-type-error (exp type)                                                            ; 031
   (3-error `(expected a ,(implode `(,@(explodec type) #/,))                                   ; 032
                       but found the ,(3-ref-type exp))                                        ; 033
-           exp `|TYPE-ERROR: |))                                                              ; 034
+           exp '|TYPE-ERROR: |))                                                              ; 034
                                                                                               ; 035
 (defun 3-index-error (n rail)                                                                 ; 036
   (3-error `(,n is out of range for) rail '|INDEX-ERROR: |))                                  ; 037
@@ -1431,19 +1434,19 @@
                (eq 3=process (funcall tv:selected-window ':PROCESS))                          ; 059
                (boundp '3=in-use)                                                             ; 060
                (selectq character                                                             ; 061
-                 (#↑B/G                                                                       ; 062
+                 (#/G                                                                         ; 062
                     (setq si:inhibit-scheduling-flag nil)                                     ; 063
                     (process-run-temporary-function                                           ; 064
                       "3=Main-Quit" 3=process ':INTERRUPT                                     ; 065
                       #'(lambda () (3-quit-interrupt '3-top-loop)))                           ; 066
                     T)                                                                        ; 067
-                 (#↑B/F                                                                       ; 068
+                 (#/F                                                                         ; 068
                     (setq si:inhibit-scheduling-flag nil)                                     ; 069
                     (process-run-temporary-function                                           ; 070
                       "3=Level-Quit" 3=process ':INTERRUPT                                    ; 071
                       #'(lambda () (3-quit-interrupt '3-level-loop)))                         ; 072
                     T)                                                                        ; 073
-                 (#↑B/E                                                                       ; 074
+                 (#/E                                                                         ; 074
                     (setq si:inhibit-scheduling-flag nil)                                     ; 075
                     (process-run-temporary-function                                           ; 076
                       "3=Flip" 3=process ':INTERRUPT                                          ; 077
@@ -1474,7 +1477,7 @@
    3=level 1                                                                                  ; 009
    3=break-flag t                                                                             ; 010
    3=simple-aliases '(~C0~ ~C1~ ~C2~ ~C3~ ~C4~ ~C5~ ~PRIM~)                                   ; 011
-   3=normalise-closure nil              ; These will be set to read values                    ; 012
+   3=normalise-closure nil              ; These will be set to real values                    ; 012
    3=reduce-closure nil                 ; later, but will be referenced first                 ; 013
    3=id-closure nil                                                                           ; 014
    3=global-environment (3-initial-environment)                                               ; 015
@@ -1514,7 +1517,7 @@
      (3-rplacn 2 (3r-1st env) ↑env)                                                           ; 049
      env))                                                                                    ; 050
                                                                                               ; 051
-;;; 3-MAKE-PRIMITIVE-CLOSURE   Constructs the rpimitive definitions.                            052
+;;; 3-MAKE-PRIMITIVE-CLOSURE   Constructs the primitive definitions.                            052
 ;;; ------------------------                                                                    053
                                                                                               ; 054
 (defun 3-make-primitive-closure (entry)                                                       ; 055
@@ -1525,7 +1528,7 @@
 (defun 3-circular-closures ()                                                                 ; 060
    '((terpri   \(lambda simple [] (terpri)))                                                  ; 061
      (read     \(lambda simple [] (read)))                                                    ; 062
-     (type     \(lambda simple [expr] (type expr)))                                           ; 063
+     (type     \(lambda simple [exp] (type exp)))                                             ; 063
      (car      \(lambda simple [pair] (car pair)))                                            ; 064
      (cdr      \(lambda simple [pair] (cdr pair)))                                            ; 065
      (length   \(lambda simple [vector] (length vector)))                                     ; 066
@@ -1601,7 +1604,7 @@
              (lambda simple [element*]                                  ; C2                  ; 046
                 (normalise-rail (rest rail) env                                               ; 047
                    (lambda simple [rest*]                               ; C3                  ; 048
-                      (cont (prep elements* rest*)))))))))                                    ; 049
+                      (cont (prep element* rest*)))))))))                                     ; 049
                                                                                               ; 050
 ]))                                                                                           ; 051
                                                                                               ; 052
@@ -1652,7 +1655,7 @@
                      (lambda simple args (error 'partial-closure-used))))]])                  ; 045
                                                                                               ; 046
 ;;; Now a temporary version of REBIND (which is recursive, and uses an explicit                 047
-;;; call to Z in its construction), and a temporary DEFINE that doesn't protect X,              048
+;;; call to Z in its construction), and a temporary DEFINE that doesn't protect Z,              048
 ;;; and that expands the macro explicitly:                                                      049
                                                                                               ; 050
 (rplact (length global)                                                                       ; 051
@@ -1742,7 +1745,7 @@
                                                                                               ; 135
 (define BIND                                                                                  ; 136
   (lambda simple [pattern args env]                                                           ; 137
-     !(join ↑(match patten args) ↑env)))                                                      ; 138
+     !(join ↑(match pattern args) ↑env)))                                                     ; 138
                                                                                               ; 139
 (define MATCH                                                                                 ; 140
   (lambda simple [pattern args]                                                               ; 141
@@ -1750,7 +1753,7 @@
            [(handle args) (match pattern (map name !args))]                                   ; 143
            [(and (empty pattern) (empty args)) (scons)]                                       ; 144
            [(empty pattern) (error 'too-many-arguments)]                                      ; 145
-           [(empty args) (error 'too-few-argunents)]                                          ; 146
+           [(empty args) (error 'too-few-arguments)]                                          ; 146
            [$T !(join ↑(match (1st pattern) (1st args))                                       ; 147
                       ↑(match (rest pattern) (rest args)))])))                                ; 148
                                                                                               ; 149
@@ -1928,7 +1931,7 @@
                                                                                               ; 321
 (define OR*                                                                                   ; 322
   (lambda simple [args]                                                                       ; 323
-     (if (empty args) '$F `(if ,(1st args) $T ,(or* (rest aths))))))                          ; 324
+     (if (empty args) '$F `(if ,(1st args) $T ,(or* (rest args))))))                          ; 324
                                                                                               ; 325
 (define MAP                                                                                   ; 326
   (lambda simple args                                                                         ; 327
@@ -1997,7 +2000,7 @@
         `(set ,label (,↑z (lambda simple [,label] ,form))))))                                 ; 390
                                                                                               ; 391
 (define ERROR                                                                                 ; 392
-  (lambda reflect [a b c]                                                                     ; 393
+  (lambda reflect [a e c]                                                                     ; 393
      (undefined)))                                                                            ; 394
                                                                                               ; 395
 ]))                                                                                           ; 396
