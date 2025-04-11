@@ -1,6 +1,6 @@
 # 3-lisp: an infinite tower of meta-circular interpreters.
 
-<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L259"><img src="https://nikitadanilov.github.io/3-lisp/epigraph.png"/></a>
+<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L259"><img src="https://raw.githubusercontent.com/nikitadanilov/nikitadanilov.github.io/master/3-lisp/epigraph.png"/></a>
 
 [[Blog post](https://www.cofault.com/2022/08/3-lisp-infinite-tower-of-meta-circular.html)]
 
@@ -38,12 +38,12 @@ When this lambda function is applied (at the object level), the body is directly
 
 Here is the fragment of `3-LISP` meta-circular interpreter code that handles `lambda reflect` (together with "ordinary" lambda-s, denoted by `lambda simple`):
 
-<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1570"><img src="https://nikitadanilov.github.io/3-lisp/reduce.png"/></a>
+<a href="https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1570"><img src="https://raw.githubusercontent.com/nikitadanilov/nikitadanilov.github.io/master/3-lisp/reduce.png"/></a>
 
 ## Implementation
 It is of course not possible to run an infinite tower of interpreters directly.
 
-<img src="https://nikitadanilov.github.io/3-lisp/infinity.png"/>
+<img src="https://raw.githubusercontent.com/nikitadanilov/nikitadanilov.github.io/master/3-lisp/infinity.png"/>
 
 `3-LISP` implementation creates a meta-level on demand, when a reflective lambda is invoked. At that moment the state of the meta-level interpreter is synthesised (*e.g.*, [see](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1586) `make-c1` in the listing above). The implementation takes pain to detect when it can drop down to a lower level, which is not entirely simple because a reflective lambda can, instead of returning (that is, invoking the supplied continuation), run a potentially modified version of the [read-eval-loop](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) (called `READ-NORMALISE-PRINT` ([see](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L1563)) in `3-LISP`) which does not return. There is a lot of non-trivial machinery operating behind the scenes and though the implementation modestly proclaims itself [EXTREMELY INEFFICIENT](https://github.com/nikitadanilov/3-lisp/blob/master/3-lisp.lisp#L33) it is, in fact, remarkably fast.
 
